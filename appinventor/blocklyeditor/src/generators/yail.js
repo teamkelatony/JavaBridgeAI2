@@ -830,7 +830,7 @@ Blockly.Yail.parseBlock = function (block){
   }else if (blockCategory == "Colors"){
     code = Blockly.Yail.parseJBridgeColorBlock(block);
   }else if (blockCategory == "Variables"){
-    code = Blockly.Yail.parseJBridgeVariableBlocks(block);
+    code = Blockly.Yail.parseVariableBlocks(block);
   }else if(blockCategory == "Math"){
     code = Blockly.Yail.parseJBridgeMathBlocks(block);
   }
@@ -864,8 +864,10 @@ var code = "";
   var componentType = variableBlock.type;
   if (componentType == "lexical_variable_set"){
       code = Blockly.Yail.parseJBridgeVariableSetBlock(variableBlock);
+  }else if(componentType == "lexical_variable_get"){
+      code = Blockly.Yail.parseJBridgeVariableGetBlock(variableBlock);
   }else if(componentType = "global_declaration"){
-      code = Blockly.Yail.parseJBridgeGlobalDeclarationBlock(variableBlock);
+      code = Blockly.Yail.parseJBridgeGlobalIntializationBlock(variableBlock);
   }
   return code;
 };
@@ -1026,3 +1028,58 @@ Blockly.Yail.genJBridgeEventDispatcher = function(eventName){
   return "EventDispatcher.registerEventForDelegation( this, " + eventName +"Event, "+ eventName +" );";
 };
 
+Blockly.Yail.parseJBridgeMathBlocks = function(mathBlock){
+  var code = "";
+  if(mathBlock.type == "math_number"){
+    code = Blockly.Yail.parseJBridgeMathNumberBlock(mathBlock);
+  }
+  return code;
+};
+Blockly.Yail.parseJBridgeMathNumberBlock = function(mathBlock){
+  var numberValue ;
+  //Assuming numver value always in the fieldRow[0] in inputlist[0].
+  numberValue = mathBlock.inputList[0].fieldRow[0].text_;
+  return Blockly.Yail.genJBridgeMathNumberBlock(numberValue);
+};
+
+Blockly.Yail.genJBridgeMathNumberBlock= function(numberValue){
+   var code="";
+   code = numberValue;
+   return code;
+};
+
+Blockly.Yail.parseJBridgeGlobalIntializationBlock = function(globalBlock){
+  var leftValue ;
+  var rightValue ;
+  //Assuming the "name" of the global variable is always in the second place in inputlist.
+  leftValue = globalBlock.inputList[0].fieldRow[1].text_;
+
+  //Declaring all the global blocks to be a float
+  //Fix this issue by checking the type of the child block by 
+  //and setting the appropirate type for the global
+
+  jBridgeComponentMap[leftValue] = [];
+  jBridgeComponentMap[leftValue].push({"Type" : "float"});
+  jBridgeVariableDefinitionMap[leftValue] = "float";
+
+
+  rightValue = ""
+  for(var x = 0, childBlock; childBlock = globalBlock.childBlocks_[x]; x++){
+        rightValue = rightValue 
+                     + " "
+                     + Blockly.Yail.parseBlock(childBlock);
+  }
+
+  jBridgeInitializationList.push(Blockly.Yail.genJBridgeGlobalIntializationBlock(leftValue, rightValue));
+  
+  return "";
+};
+
+Blockly.Yail.genJBridgeGlobalIntializationBlock = function(leftValue, rightValue){
+  var code = ""
+  code = leftValue 
+         + " = "
+         + rightValue
+         +";";
+  return code
+};
