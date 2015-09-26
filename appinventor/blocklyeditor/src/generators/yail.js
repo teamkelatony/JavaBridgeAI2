@@ -129,6 +129,7 @@ Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
   var propertyNameConverter = function(input) {
     return input;
   };
+  var javaCode = [];
   if (jsonObject.Properties) {
     formProperties = jsonObject.Properties;
     formName = formProperties.$Name;
@@ -145,7 +146,7 @@ Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
   code.push("\n######################################\n");
 
   code.push("\n------------------------------------\n");
-  code.push(Blockly.Yail.genJBridgeCode(Blockly.mainWorkspace.getTopBlocks(true), jsonObject));
+  javaCode.push(Blockly.Yail.genJBridgeCode(Blockly.mainWorkspace.getTopBlocks(true), jsonObject));
   code.push("\n------------------------------------\n");
   if (!forRepl) {
     code.push(Blockly.Yail.getYailPrelude(packageName, formName));
@@ -192,7 +193,7 @@ Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
     // finalCode = code.join('\n').replace(/\\(set-property.*\"\"\\)\\n*/mg, "");
   }
   
-  return code.join('\n');  // Blank line between each section.
+  return javaCode.join('\n');  // Blank line between each section.
 };
 
 Blockly.Yail.getDeepNames = function(componentJson, componentNames) {
@@ -779,8 +780,8 @@ Blockly.Yail.genJBridgeClass =  function (topBlocks){
   var code = "\npublic class Screen1 extends Form implements HandlesEventDispatching { \n"
     + Blockly.Yail.parseComponentDefinition(jBridgeVariableDefinitionMap)
     + Blockly.Yail.genJBridgeDefineMethod()
-    +Blockly.Yail.genJBridgeDispatchEvent(); 
-    +"\n}\n"  
+    +Blockly.Yail.genJBridgeDispatchEvent()
+    +"\n}\n";
   return code;
 };
 
