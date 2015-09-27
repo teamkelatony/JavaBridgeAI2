@@ -841,33 +841,14 @@ Blockly.Yail.parseBlock = function (block){
   }else if (blockCategory == "Colors"){
     code = Blockly.Yail.parseJBridgeColorBlock(block);
   }else if (blockCategory == "Variables"){
-    code = Blockly.Yail.parseVariableBlocks(block);
+    code = Blockly.Yail.parseJBridgeVariableBlocks(block);
   }else if(blockCategory == "Math"){
     code = Blockly.Yail.parseJBridgeMathBlocks(block);
+  }else if( blockCategory == "Logic"){
+    code = Blockly.Yail.parseJBridgeLogicBlocks(block);
   }
 
   return code;
-}
-
-Blockly.Yail.parseJBridgeMathBlocks = function(mathBlock){
-  var code = "";
-  if(mathBlock.type == "math_number"){
-    code = Blockly.Yail.parseJBridgeMathNumberBlock(mathBlock);
-  }
-  return code;
-}
-
-Blockly.Yail.parseJBridgeMathNumberBlock = function(mathBlock){
-  var numberValue ;
-  //Assuming numver value always in the fieldRow[0] in inputlist[0].
-  numberValue = mathBlock.inputList[0].fieldRow[0].text_;
-  return Blockly.Yail.genJBridgeMathNumberBlock(numberValue);
-}
-
-Blockly.Yail.genJBridgeMathNumberBlock= function(numberValue){
-   var code="";
-   code = numberValue;
-   return code;
 }
 
 Blockly.Yail.parseJBridgeVariableBlocks = function (variableBlock){
@@ -902,14 +883,17 @@ Blockly.Yail.genJBridgeGlobalDeclarationBlock = function(leftValue, rightValue){
   return code
 }
 
-Blockly.Yail.parseJBridgeVariableSetBlock = function(variableBlock){
-    return Blockly.Yail.genJBridgeVariableSetBlock();
+Blockly.Yail.parseJBridgeVariableSetBlock = function(variableSetBlock){
+    var leftValue = variableSetBlock.getFieldValue("VAR");
+    var rightValue = ""
+    for(var x = 0, childBlock; childBlock = variableSetBlock.childBlocks_[x]; x++){
+        rightValue = rightValue 
+                     + " "
+                     + Blockly.Yail.parseBlock(childBlock);
+    }
+    return Blockly.Yail.genJBridgeVariableIntializationBlock(leftValue, rightValue);
   };
 
-Blockly.Yail.genJBridgeVariableSetBlock = function(){
-  var code = ""
-  return code;
-};
 
 Blockly.Yail.parseJBridgeComponentBlock = function(componentBlock){
   var code = "";
@@ -929,8 +913,6 @@ Blockly.Yail.parseJBridgeComponentBlock = function(componentBlock){
   return code;
 };
 
-<<<<<<< HEAD
-=======
 Blockly.Yail.parseJBridgeMethodCallBlock = function(methodCallBlock){
   var objectName = methodCallBlock.instanceName;
   var methodName = methodCallBlock.methodName;
@@ -1005,7 +987,6 @@ code = objectName
 return code;
 };
 
->>>>>>> Added helper functions and Impl global Params
 Blockly.Yail.parseJBridgeColorBlock = function(colorBlock){
   // TOOD Fix the copy pasted or duplicated color palette block 
   var color = colorBlock.type.toUpperCase();
@@ -1154,12 +1135,12 @@ Blockly.Yail.parseJBridgeGlobalIntializationBlock = function(globalBlock){
                      + Blockly.Yail.parseBlock(childBlock);
   }
 
-  jBridgeInitializationList.push(Blockly.Yail.genJBridgeGlobalIntializationBlock(leftValue, rightValue));
+  jBridgeInitializationList.push(Blockly.Yail.genJBridgeVariableIntializationBlock(leftValue, rightValue));
   
   return "";
 };
 
-Blockly.Yail.genJBridgeGlobalIntializationBlock = function(leftValue, rightValue){
+Blockly.Yail.genJBridgeVariableIntializationBlock = function(leftValue, rightValue){
   var code = ""
   code = leftValue 
          + " = "
@@ -1167,4 +1148,21 @@ Blockly.Yail.genJBridgeGlobalIntializationBlock = function(leftValue, rightValue
          +";";
   return code
 };
-  
+
+Blockly.Yail.parseJBridgeLogicBlocks = function (logicBlock){
+var code = "";
+  var componentType = logicBlock.type;
+  if (componentType == "logic_boolean"){
+      code = Blockly.Yail.parseJBridgeBooleanBlock(logicBlock);
+  }
+  return code;
+};
+
+Blockly.Yail.parseJBridgeBooleanBlock = function(logicBlock){
+  var value = logicBlock.getFieldValue("BOOL");
+  return Blockly.Yail.genJBridgeBooleanBlock(value);
+};
+
+Blockly.Yail.genJBridgeBooleanBlock = function(value){
+  return value.toLowerCase();
+};
