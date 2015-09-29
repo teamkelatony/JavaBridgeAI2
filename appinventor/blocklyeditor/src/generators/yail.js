@@ -882,6 +882,7 @@ var code = "";
       code = Blockly.Yail.parseJBridgeVariableGetBlock(variableBlock);
   }else if(componentType = "global_declaration"){
       code = Blockly.Yail.parseJBridgeGlobalIntializationBlock(variableBlock);
+      jBridgeIsIndividualBlock = true;
   }
   return code;
 };
