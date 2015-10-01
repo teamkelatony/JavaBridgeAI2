@@ -691,7 +691,7 @@ Blockly.Yail.initAllVariables = function(){
 };
 
 Blockly.Yail.parseJBridgeJsonData = function(jsonObject){
-  property = jsonObject.Properties;
+  var property = jsonObject.Properties;
   var title = property.Title;
   var icon = property.Icon;
   if (title != undefined){
@@ -720,7 +720,7 @@ Blockly.Yail.parseJBridgeJsonComopnents = function (componentJson, rootName){
   jBridgeComponentMap[name].push({"Type": componentJson.$Type});
 
   jBridgeVariableDefinitionMap[name] = componentJson.$Type;
-  jBridgeImportsMap[componentJson.$Type] = "import com.google.appinventor.components.runtime."+componentJson.$Type+";" 
+  jBridgeImportsMap[componentJson.$Type] = "import com.google.appinventor.components.runtime."+componentJson.$Type+";"; 
   var newObj = name
                +" = new "
                +componentJson.$Type
@@ -1074,12 +1074,16 @@ Blockly.Yail.genJBridgeColorBlock = function(color){
 };
 
 Blockly.Yail.parseJBridgeGetBlock = function(getBlock){
-  
-  return Blockly.Yail.genJBridgeSetBlock();
+  var componentName = Blockly.Yail.getJBridgeInstanceName(getBlock);
+  var property = getBlock.propertyName;
+  return Blockly.Yail.genJBridgeGetBlock(componentName, property);
 };
 
-Blockly.Yail.genJBridgeGetBlock = function(){
-  var code = "// TODO Implement Get Block";
+Blockly.Yail.genJBridgeGetBlock = function(componentName, property){
+  var code = componentName
+             +"."
+             +property
+             +"()";
   return code;
 };
 
@@ -1164,6 +1168,10 @@ Blockly.Yail.parseJBridgeMathBlocks = function(mathBlock){
   var code = "";
   if(mathBlock.type == "math_number"){
     code = Blockly.Yail.parseJBridgeMathNumberBlock(mathBlock);
+  }else if(mathBlock.type == "math_random_int"){
+    code = Blockly.Yail.parseJBridgeMathRandomInt(mathBlock);
+  }else if(mathBlock.type == "math_subtract"){
+    code = Blockly.Yail.parseJBridgeMathSubtract(mathBlock);
   }
   return code;
 };
@@ -1172,6 +1180,47 @@ Blockly.Yail.parseJBridgeMathNumberBlock = function(mathBlock){
   //Assuming numver value always in the fieldRow[0] in inputlist[0].
   numberValue = mathBlock.getFieldValue('NUM');
   return Blockly.Yail.genJBridgeMathNumberBlock(numberValue);
+};
+
+Blockly.Yail.parseJBridgeMathSubtract = function(mathBlock){
+    var leftValue = Blockly.Yail.parseBlock(mathBlock.childBlocks_[0]);
+    var rightValue = Blockly.Yail.parseBlock(mathBlock.childBlocks_[1]);
+    return Blockly.Yail.genJBridgeMathOperation(leftValue, rightValue, "-");
+};
+
+Blockly.Yail.parseJBridgeMathRandomInt = function(mathBlock){
+    var name = "random";
+    if(!jBridgeVariableDefinitionMap[name]){
+        jBridgeVariableDefinitionMap[name] = "Random";
+        jBridgeInitializationList.push("random = new Random();");
+        jBridgeImportsMap[name] = "import java.util.Random;";
+    }
+    var leftValue = Blockly.Yail.parseBlock(mathBlock.childBlocks_[0]);
+    var rightValue = Blockly.Yail.parseBlock(mathBlock.childBlocks_[1]);
+    return Blockly.Yail.genJBridgeMathRandomInt(leftValue, rightValue);
+};
+
+
+Blockly.Yail.genJBridgeMathRandomInt = function(leftValue, rightValue){
+    var code = "random.nextInt("
+             + rightValue
+             + " - "
+             + leftValue
+             + ")"
+             + " + "
+             + leftValue;
+    return code;
+};
+
+Blockly.Yail.genJBridgeMathOperation = function(leftValue, rightValue, operand){
+    var code = "(" 
+               +leftValue
+               + " "
+               + operand
+               + " "
+               + rightValue
+               + ")";
+    return code;
 };
 
 Blockly.Yail.genJBridgeMathNumberBlock= function(numberValue){
