@@ -103,13 +103,8 @@ public class TopToolbar extends Composite {
   private static final String WIDGET_NAME_IMPORTTEMPLATE = "ImportTemplate";
   private static final String WIDGET_NAME_EXPORTALLPROJECTS = "ExportAllProjects";
   private static final String WIDGET_NAME_EXPORTPROJECT = "ExportProject";
-  private static final String WIDGET_NAME_COMPONENTS = "Components";
-  private static final String WIDGET_NAME_MY_COMPONENTS = "MyComponents";
-  private static final String WIDGET_NAME_START_NEW_COMPONENT = "StartNewComponent";
-  private static final String WIDGET_NAME_IMPORT_COMPONENT = "ImportComponent";
-  private static final String WIDGET_NAME_BUILD_COMPONENT = "BuildComponent";
-  private static final String WIDGET_NAME_UPLOAD_COMPONENT = "UploadComponent";
-
+  private static final String WIDGET_NAME_GENERATEJAVA = "GenerateJava";
+    
   private static final String WIDGET_NAME_ADMIN = "Admin";
   private static final String WIDGET_NAME_USER_ADMIN = "UserAdmin";
   private static final String WIDGET_NAME_DOWNLOAD_USER_SOURCE = "DownloadUserSource";
@@ -212,6 +207,8 @@ public class TopToolbar extends Composite {
     buildItems.add(new DropDownItem(WIDGET_NAME_BUILD_BARCODE, MESSAGES.showBarcodeMenuItem(),
         new BarcodeAction()));
     buildItems.add(new DropDownItem(WIDGET_NAME_BUILD_DOWNLOAD, MESSAGES.downloadToComputerMenuItem(),
+        new DownloadAction()));
+    buildItems.add(new DropDownItem(WIDGET_NAME_GENERATEJAVA, MESSAGES.generateJavaItem(),
         new DownloadAction()));
     if (AppInventorFeatures.hasYailGenerationOption() && Ode.getInstance().getUser().getIsAdmin()) {
       buildItems.add(null);
