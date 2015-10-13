@@ -253,6 +253,16 @@ public class BlocklyPanel extends HTMLPanel {
       throw new YailGenerationException(e.getDescription(), formName);
     }
   }
+    public String getJava(String formJson, String packageName) throws YailGenerationException {
+        if (!blocksInited(formName)) {
+            throw new YailGenerationException("Blocks area is not initialized yet", formName);
+        }
+        try {
+            return doGetJava(formName, formJson, packageName);
+        } catch (JavaScriptException e) {
+            throw new YailGenerationException(e.getDescription(), formName);
+        }
+    }
 
   /**
    * Send component data (json and form name) to Blockly for building
@@ -768,10 +778,12 @@ public class BlocklyPanel extends HTMLPanel {
       .isDrawerShowing();
   }-*/;
 
-  public native void render()/*-{
-    this.@com.google.appinventor.client.editor.youngandroid.BlocklyPanel::workspace
-      .resize()
-      .render();
+  public static native String doGetJava(String formName, String formJson, String packageName) /*-{
+    return $wnd.Blocklies[formName].Yail.getFormYail(formJson, packageName);
+  }-*/;
+
+  public static native String doGetYail(String formName, String formJson, String packageName) /*-{
+    return $wnd.Blocklies[formName].Yail.getFormYail(formJson, packageName);
   }-*/;
 
   public native void hideChaff()/*-{
