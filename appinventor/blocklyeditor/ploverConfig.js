@@ -153,6 +153,7 @@
 
     //generator files
     "./src/generators/yail.js",
+    "./src/generators/java.js",
     "./src/generators/yail/componentblock.js",
     "./src/generators/yail/lists.js",
     "./src/generators/yail/math.js",
