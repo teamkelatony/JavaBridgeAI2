@@ -160,8 +160,6 @@ public class TopToolbar extends Composite {
     }
     fileItems.add(new DropDownItem(WIDGET_NAME_EXPORTPROJECT, MESSAGES.exportProjectMenuItem(),
         new ExportProjectAction()));
-    fileItems.add(new DropDownItem(WIDGET_NAME_EXPORTECLIPSEPROJECT, MESSAGES.exportEclipseProjectMenuItem(),
-        new ExportProjectAction()));
     fileItems.add(new DropDownItem(WIDGET_NAME_EXPORTALLPROJECTS, MESSAGES.exportAllProjectsMenuItem(),
         new ExportAllProjectsAction()));
     fileItems.add(null);
@@ -196,6 +194,8 @@ public class TopToolbar extends Composite {
         new DownloadAction()));
     buildItems.add(new DropDownItem(WIDGET_NAME_GENERATEJAVA, MESSAGES.generateJavaItem(),
         new GenerateJavaAction()));
+    buildItems.add(new DropDownItem(WIDGET_NAME_EXPORTECLIPSEPROJECT, MESSAGES.exportEclipseProjectMenuItem(),
+        new ExportProjectAction()));
     if (AppInventorFeatures.hasYailGenerationOption() && Ode.getInstance().getUser().getIsAdmin()) {
       buildItems.add(null);
       buildItems.add(new DropDownItem(WIDGET_NAME_BUILD_YAIL, MESSAGES.generateYailMenuItem(),
