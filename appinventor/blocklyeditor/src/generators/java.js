@@ -131,10 +131,506 @@ var jBridgeMethodAndTypeToPermisions = new Object();
 Blockly.Java.getFormJava = function(formJson, packageName, forRepl) {
   var jsonObject = JSON.parse(formJson); 
   var javaCode = [];
+  var formProperties;
+  var formName;
+  if (jsonObject.Properties) {
+    formProperties = jsonObject.Properties;
+    formName = formProperties.$Name;
+  } else {
+    throw "Cannot find form properties";
+  }
+  if (!formName) {
+    throw "Unable to determine form name";
+  }
+  
+  code.push("\n######################################\n");
+  var my_all_blocks = Blockly.mainWorkspace.getAllBlocks();
+  code.push(my_all_blocks);
+  code.push("\n######################################\n");
+
+  code.push("\n------------------------------------\n");
+  Blockly.Java.initAndroidPermisionAndIntent();
   javaCode.push(Blockly.Yail.genJBridgeCode(Blockly.mainWorkspace.getTopBlocks(true), jsonObject));
   
-  prityPrintCode = Blockly.Java.prityPrintJBridgeCode(javaCode.join('\n')); 
+  if (formProperties) {
+    var sourceType = jsonObject.Source;
+    if (sourceType == "Form") {
+      code = code.concat(Blockly.Yail.getComponentLines(formName, formProperties, null /*parent*/, 
+        componentMap, false /*forRepl*/));
+    } else {
+      throw "Source type " + sourceType + " is invalid.";
+    }
+  
+    // Fetch all of the components in the form, this may result in duplicates
+    var componentNames = Blockly.Yail.getDeepNames(formProperties, componentNames);
+    // Remove the duplicates
+    var uniqueNames = componentNames.filter(function(elem, pos) {
+        return componentNames.indexOf(elem) == pos});
+    componentNames = uniqueNames;
+
+    // Add runtime initializations
+    code.push(Blockly.Yail.YAIL_INIT_RUNTIME);
+  
+    if (forRepl) {
+      code = Blockly.Yail.wrapForRepl(formName, code, componentNames);
+    }
+
+    // TODO?: get rid of empty property assignments? I'm not convinced this is necessary.
+    // The original code in YABlockCompiler.java attempts to do this, but it matches on 
+    // "set-property" rather than "set-and-coerce-property" so I'm not sure it is actually
+    // doing anything. If we do need this, something like the call below might work.
+    // 
+    // finalCode = code.join('\n').replace(/\\(set-property.*\"\"\\)\\n*/mg, "");
+  }
+  var prityPrintCode = Blockly.Java.prityPrintJBridgeCode(javaCode.join('\n'));
+  var mainfestCode = Blockly.Java.getMainfest();
   return prityPrintCode;
+};
+
+Blockly.Yail.getDeepNames = function(componentJson, componentNames) {
+  if (componentJson.$Components) {
+    var children = componentJson.$Components;
+    for (var i = 0, child; child = children[i]; i++) {
+      componentNames.push(child.$Name);
+      componentNames = Blockly.Yail.getDeepNames(child, componentNames);
+    }
+  }
+  return componentNames;
+}
+
+/**
+ * Generate the beginning Yail code for an APK compilation (i.e., not the REPL)
+ * 
+ * @param {String} packageName  the name of the package for the app
+ *     (e.g. "appinventor.ai_somebody.myproject.Screen1")
+ * @param {String} formName  (e.g., "Screen1")
+ * @returns {String} Yail code
+ * @private
+*/
+Blockly.Yail.getYailPrelude = function(packageName, formName) {
+ return "#|\n$Source $Yail\n|#\n\n"
+     + Blockly.Yail.YAIL_DEFINE_FORM
+     + packageName
+     + Blockly.Yail.YAIL_SPACER
+     + formName
+     + Blockly.Yail.YAIL_CLOSE_BLOCK
+     + "(require <com.google.youngandroid.runtime>)\n";
+}
+
+/**
+ * Wraps Yail code for use in the REPL and returns the new code as an array of strings
+ * 
+ * @param {String} formName 
+ * @param {Array} code  code strings to be wrapped
+ * @param {Array} componentNames array of component names
+ * @returns {Array} wrapped code strings
+ * @private
+ */
+Blockly.Yail.wrapForRepl = function(formName, code, componentNames) {
+  var replCode = [];
+  replCode.push(Blockly.Yail.YAIL_BEGIN);
+  replCode.push(Blockly.Yail.YAIL_CLEAR_FORM);
+  if (formName != "Screen1") {
+    // If this form is not named Screen1, then the REPL won't be able to resolve any references
+    // to it or to any properties on the form itself (such as Title, BackgroundColor, etc) unless
+    // we tell it that "Screen1" has been renamed to formName.
+    // By generating a call to rename-component here, the REPL will rename "Screen1" to formName
+    // in the current environment. See rename-component in runtime.scm.
+    replCode.push(Blockly.Yail.getComponentRenameString("Screen1", formName));
+  }
+  replCode = replCode.concat(code);
+  replCode.push(Blockly.Yail.getComponentInitializationString(formName, componentNames));
+  replCode.push(Blockly.Yail.YAIL_CLOSE_BLOCK);
+  return replCode;
+}
+
+/**
+ * Return code to initialize all components in componentMap.
+ * 
+ * @param {Array} componentNames array of names of components in the workspace
+ * @returns {Array} code strings
+ * @private
+ */
+Blockly.Yail.getComponentInitializationString = function(formName, componentNames) {
+  var code = Blockly.Yail.YAIL_INITIALIZE_COMPONENTS;
+  code += " " + Blockly.Yail.YAIL_QUOTE + formName;
+  for (var i = 0, cName; cName = componentNames[i]; i++) {  // TODO: will we get non-component fields this way?
+    if (cName != formName)                                  // Avoid duplicate initialization of the form
+      code = code + " " + Blockly.Yail.YAIL_QUOTE + cName;
+  }
+  code = code + ")";
+  return code;
+}
+
+/**
+ * Generate Yail code for the component described by componentJson, and all of its child
+ * components (if it has any). componentJson may describe a Form or a regular component. The
+ * generated code includes adding each component to the form, as well as generating code for
+ * the top-level blocks for that component.
+ *
+ * @param {String} formName
+ * @param {String} componentJson JSON string describing the component
+ * @param {String} parentName  the name of the component that contains this component (which may be
+ *    its Form, for top-level components).
+ * @param {Object} componentMap map from component names to the top-level blocks for that component
+ *    in the workspace. See the Blockly.Component.buildComponentMap description for the structure.
+ * @param {Boolean} forRepl true iff we're generating code for the REPL rather than an apk.
+ * @returns {Array} code strings
+ * @private
+ */
+Blockly.Yail.getComponentLines = function(formName, componentJson, parentName, componentMap, 
+  forRepl) {
+  var code = [];
+  var componentName = componentJson.$Name;
+  if (componentJson.$Type == 'Form') {
+    code = Blockly.Yail.getFormPropertiesLines(formName, componentJson, !forRepl);
+  } else {
+    code = Blockly.Yail.getComponentPropertiesLines(formName, componentJson, parentName, !forRepl);
+  }
+
+  if (!forRepl) {
+    // Generate code for all top-level blocks related to this component
+    if (componentMap.components && componentMap.components[componentName]) {
+      var componentBlocks = componentMap.components[componentName];
+      for (var i = 0, block; block = componentBlocks[i]; i++) {
+        code.push(Blockly.Yail.blockToCode(block));
+      }
+    }
+  }
+
+  // Generate code for child components of this component
+  if (componentJson.$Components) {
+    var children = componentJson.$Components;
+    for (var i = 0, child; child = children[i]; i++) {
+      code = code.concat(Blockly.Yail.getComponentLines(formName, child, componentName, 
+        componentMap, forRepl));
+    }
+  }
+  return code;  
+};
+
+/**
+ * Generate Yail to add the component described by componentJson to its parent, followed by
+ * the code that sets each property of the component (for all its properties listed in
+ * componentJson).
+ * 
+ * @param {String} formName
+ * @param {String} componentJson JSON string describing the component
+ * @param {String} parentName  the name of the component that contains this component (which may be
+ *    its Form, for top-level components).
+ * @param {Boolean} whether to include comments in the generated code
+ * @returns {Array} code strings
+ * @private
+ */
+Blockly.Yail.getComponentPropertiesLines = function(formName, componentJson, parentName, 
+  includeComments) {
+  var code = [];
+  var componentName = componentJson.$Name;
+  var componentType = componentJson.$Type;
+  // generate the yail code that adds the component to its parent, followed by the code that
+  // sets each property of the component
+  if (includeComments) {
+    code.push(Blockly.Yail.YAIL_COMMENT_MAJOR + componentName + Blockly.Yail.YAIL_LINE_FEED);
+  }
+  code.push(Blockly.Yail.YAIL_ADD_COMPONENT + parentName + Blockly.Yail.YAIL_SPACER + 
+    componentType + Blockly.Yail.YAIL_SPACER + componentName + Blockly.Yail.YAIL_SPACER);
+  code = code.concat(Blockly.Yail.getPropertySettersLines(componentJson, componentName));
+  code.push(Blockly.Yail.YAIL_CLOSE_BLOCK);
+  return code;
+}
+
+/**
+ * Generate Yail to set the properties for the Form described by componentJson.
+ * 
+ * @param {String} formName
+ * @param {String} componentJson JSON string describing the component
+ * @param {Boolean} whether to include comments in the generated code
+ * @returns {Array} code strings
+ * @private
+ */
+Blockly.Yail.getFormPropertiesLines = function(formName, componentJson, includeComments) {
+  var code = [];
+  if (includeComments) {
+    code.push(Blockly.Yail.YAIL_COMMENT_MAJOR + formName + Blockly.Yail.YAIL_LINE_FEED);
+  }
+  var yailForComponentProperties = Blockly.Yail.getPropertySettersLines(componentJson, formName);
+  if (yailForComponentProperties.length > 0) {
+    // getPropertySettersLine returns an array of lines.  So we need to 
+    // concatenate them (using join) before pushing them onto the Yail expression.
+    // WARNING:  There may be other type errors of this sort in this file, which
+    // (hopefully) will be uncovered in testing. Please
+    // be alert for these errors and check carefully.
+    code.push(Blockly.Yail.YAIL_DO_AFTER_FORM_CREATION + yailForComponentProperties.join(" ") + 
+      Blockly.Yail.YAIL_CLOSE_BLOCK);
+  }
+  return code;
+}
+
+/**
+ * Generate the code to set property values for the specifed component.
+ *
+ * @param {Object} componentJson JSON String describing the component
+ * @param {String} componentName the name of the component (also present in the $Name field in
+ *    componentJson)
+ * @returns {Array} code strings
+ * @private
+ */
+Blockly.Yail.getPropertySettersLines = function(componentJson, componentName) {
+  var code = [];
+  for (var prop in componentJson) {
+    if (prop.charAt(0) != "$" && prop != "Uuid") {
+      code.push(Blockly.Yail.getPropertySetterString(componentName, componentJson.$Type, prop, 
+        componentJson[prop]));
+    }
+  }
+  return code;
+}
+
+/**
+ * Generate the code to set a single property value.
+ *
+ * @param {String} componentName
+ * @param {String} propertyName
+ * @param {String} propertyValue
+ * @returns code string
+ * @private
+ */
+Blockly.Yail.getPropertySetterString = function(componentName, componentType, propertyName, 
+  propertyValue) {
+  var code = Blockly.Yail.YAIL_SET_AND_COERCE_PROPERTY + Blockly.Yail.YAIL_QUOTE + 
+    componentName + Blockly.Yail.YAIL_SPACER + Blockly.Yail.YAIL_QUOTE + propertyName + 
+    Blockly.Yail.YAIL_SPACER;
+  var propType = Blockly.Yail.YAIL_QUOTE + 
+    Blockly.ComponentTypes[componentType].properties[propertyName].type;
+  var value = Blockly.Yail.getPropertyValueString(propertyValue, propType);
+  code = code.concat(value + Blockly.Yail.YAIL_SPACER + propType + Blockly.Yail.YAIL_CLOSE_BLOCK);
+  return code;
+}
+
+/**
+ * Generate the Yail code for a property value. Special case handling when propertyType is
+ * "'number", "'boolean", "'component", the empty string, or null. For all other property values
+ * it returns the value as converted by Blockly.Yail.quotifyForREPL().
+ *
+ * @param {String} propertyValue
+ * @param {String} propertyType
+ * @returns code string
+ * @private
+ */
+Blockly.Yail.getPropertyValueString = function(propertyValue, propertyType) {
+  if (propertyType == "'number") {
+    if (propertyValue.match(Blockly.Yail.INTEGER_REGEXP) 
+            || propertyValue.match(Blockly.Yail.FLONUM_REGEXP)) { // integer
+      return propertyValue;
+    } else if (propertyValue.match(Blockly.Yail.SIMPLE_HEX_PREFIX + "[0-9A-F]+")) { // hex
+      return Blockly.Yail.YAIL_HEX_PREFIX + 
+        propertyValue.substring(Blockly.Yail.SIMPLE_HEX_PREFIX.length);
+    }
+  } else if (propertyType == "'boolean") {
+    if (-1 != propertyValue.indexOf("False")) {
+      return "#f";
+    } else if (-1 != propertyValue.indexOf("True")) {
+      return "#t";
+    }
+  } else if (propertyType == "'component") {
+    if (propertyValue == "") {
+      return "\"\"";
+    } else {
+      return Blockly.Yail.YAIL_GET_COMPONENT + propertyValue + ")";
+    }
+  }
+
+  if (propertyValue == "" || propertyValue == "null") {  // empty string
+    return "\"\"";
+  }
+  return Blockly.Yail.quotifyForREPL(propertyValue);
+}
+
+/**
+ * Generate the code to rename a component
+ *
+ * @param {String} oldName
+ * @param {String} newName
+ * @returns {String} code
+ * @private
+ */
+Blockly.Yail.getComponentRenameString = function(oldName, newName) {
+  return Blockly.Yail.YAIL_RENAME_COMPONENT + Blockly.Yail.quotifyForREPL(oldName)
+    + Blockly.Yail.YAIL_SPACER + Blockly.Yail.quotifyForREPL(newName)
+    + Blockly.Yail.YAIL_CLOSE_BLOCK;
+}
+
+/**
+ * Transform a string to the Kawa input representation of the string, for sending to
+ * the REPL, by using backslash to escape quotes and backslashes. But do not escape a backslash
+ * if it is part of \n. Then enclose the result in quotes.
+ * TODO: Extend this to a complete transformation that deals with the full set of formatting
+ * characters.
+ *
+ * @param {String} s string to be quotified
+ * @returns {String}
+ * @private
+ */
+Blockly.Yail.quotifyForREPL = function(s) {
+  if (!s) {
+    return null;
+  } else {
+    var sb = [];
+    sb.push('"');
+    var len = s.length;
+    var lastIndex = len - 1;
+    for (var i = 0; i < len; i++) {
+      var c = s.charAt(i);
+      if (c == '\\') {
+        // If this is \n don't slashify the backslash
+        // TODO(user): Make this cleaner and more general
+        if (!(i == lastIndex) && s.charAt(i + 1) == 'n') {
+          sb.push(c);
+          sb.push(s.charAt(i + 1));
+          i = i + 1;
+        } else {
+          sb.push('\\');
+          sb.push(c);
+        }
+      } else if (c == '"') {
+        sb.push('\\');
+        sb.push(c);
+      } else {
+        var u = s.charCodeAt(i);  // unicode of c
+        if (u < ' '.charCodeAt(0) || u > '~'.charCodeAt(0)) {
+          // Replace any special chars with \u1234 unicode
+          var hex = "000" + u.toString(16);
+          hex = hex.substring(hex.length - 4);
+          sb.push("\\u" + hex);
+        } else {
+          sb.push(c);
+        }
+      }
+    }
+    sb.push('"');
+    return sb.join("");
+  }
+}
+
+/**
+ * Encode a string as a properly escaped Yail string, complete with quotes.
+ * @param {String} string Text to encode.
+ * @return {String} Yail string.
+ * @private
+ */
+
+Blockly.Yail.quote_ = function(string) {
+  string = Blockly.Yail.quotifyForREPL(string);
+  if (!string) {                // quotifyForREPL can return null for
+    string = '""';              // empty string
+  }
+  return string;
+};
+
+/**
+ * Naked values are top-level blocks with outputs that aren't plugged into
+ * anything.  A trailing semicolon is needed to make this legal.
+ * @param {string} line Line of generated code.
+ * @return {string} Legal line of code.
+ */
+Blockly.Yail.scrubNakedValue = function(line) {
+  return line;
+};
+
+/**
+ * Handles comments for the specified block and any connected value blocks.
+ * Calls any statements following this block.
+ * @param {!Blockly.Block} block The current block.
+ * @param {string} code The Yail code created for this block.
+ * @param {thisOnly} if true, only return code for this block and not any following statements
+ *   note that calls of scrub_ with no 3rd parameter are equivalent to thisOnly=false, which
+ *   was the behavior before this parameter was added.
+ * @return {string} Yail code with comments and subsequent blocks added.
+ * @private
+ */
+Blockly.Yail.scrub_ = function(block, code, thisOnly) {
+  if (code === null) {
+    // Block has handled code generation itself.
+    return '';
+  }
+  var commentCode = '';
+  /* TODO: fix for Yail comments?
+  // Only collect comments for blocks that aren't inline.
+  if (!block.outputConnection || !block.outputConnection.targetConnection) {
+    // Collect comment for this block.
+    var comment = block.getCommentText();
+    if (comment) {
+      commentCode += Blockly.Generator.prefixLines(comment, '// ') + '\n';
+    }
+    // Collect comments for all value arguments.
+    // Don't collect comments for nested statements.
+    for (var x = 0; x < block.inputList.length; x++) {
+      if (block.inputList[x].type == Blockly.INPUT_VALUE) {
+        var childBlock = block.inputList[x].targetBlock();
+        if (childBlock) {
+          var comment = Blockly.Generator.allNestedComments(childBlock);
+          if (comment) {
+            commentCode += Blockly.Generator.prefixLines(comment, '// ');
+          }
+        }
+      }
+    }
+  }*/
+  var nextBlock = block.nextConnection && block.nextConnection.targetBlock();
+  var nextCode = thisOnly ? "" : this.blockToCode(nextBlock);
+  return commentCode + code + nextCode;
+};
+
+Blockly.Yail.getDebuggingYail = function() {
+  var code = [];
+  var componentMap = Blockly.Component.buildComponentMap([], [], false, false);
+  
+  var globalBlocks = componentMap.globals;
+  for (var i = 0, block; block = globalBlocks[i]; i++) {
+    code.push(Blockly.Yail.blockToCode(block));
+  }
+  
+  var blocks = Blockly.mainWorkspace.getTopBlocks(true);
+  for (var x = 0, block; block = blocks[x]; x++) {
+    
+    // generate Yail for each top-level language block
+    if (!block.category) {
+      continue;
+    }
+    code.push(Blockly.Yail.blockToCode(block));
+  }
+  return code.join('\n\n');
+};
+
+/**
+ * Generate code for the specified block but *not* attached blocks.
+ * @param {Blockly.Block} block The block to generate code for.
+ * @return {string|!Array} For statement blocks, the generated code.
+ *     For value blocks, an array containing the generated code and an
+ *     operator order value.  Returns '' if block is null.
+ */
+Blockly.Yail.blockToCode1 = function(block) {
+  if (!block) {
+    return '';
+  }
+  var func = this[block.type];
+  if (!func) {
+    throw 'Language "' + name + '" does not know how to generate code ' +
+        'for block type "' + block.type + '".';
+  }
+  var code = func.call(block);
+  if (code instanceof Array) {
+    // Value blocks return tuples of code and operator order.
+    if (block.disabled) {
+      code[0] = '';
+    }
+    return [this.scrub_(block, code[0], true), code[1]];
+  } else {
+    if (block.disabled) {
+      code = '';
+    }
+    return this.scrub_(block, code, true);
+  }
 };
 
 
@@ -566,16 +1062,10 @@ Blockly.Yail.parseJBridgeComponentBlock = function(componentBlock){
   }else if (componentType == "component_method" ){
     code = Blockly.Yail.parseJBridgeMethodCallBlock(componentBlock);
     Blockly.Java.addPermisionsAndIntents(componentBlock.methodName);
-    //ParentBlock is set block and the first child block of parent is currentBlock, then this is arg in the parent's block
-    if(componentBlock.parentBlock_.type == "component_set_get" && componentBlock.parentBlock_.setOrGet == "set" && componentBlock.parentBlock_.childBlocks_[0] == componentBlock){
-      jBridgeIsIndividualBlock = false;
-      if(code.slice(-2) == ";\n"){
-        code = code.slice(0, -2);
-      }
-    }
-    else{
+    //TODO Not sure what is the side effect of commiting below lines
+    // var methodname = componentBlock.methodName;
+    // if(methodname != undefined && methodname.substring(0,3) != "Get"){
       jBridgeIsIndividualBlock = true;
-    }
   }else if (componentType == "component_component_block"){
     code = Blockly.Yail.parseJBridgeComponentComponentBlock(componentBlock);
   }else{
@@ -1360,10 +1850,7 @@ Blockly.Java.prityPrintIndentationJBridge = function(indendLength){
   return indentation;
 };
 
-Blockly.Java.getFormMainfest = function(formJson, packageName, forRepl) {
-    Blockly.Java.initAndroidPermisionAndIntent();
-    javaCode.push(Blockly.Yail.genJBridgeCode(Blockly.mainWorkspace.getTopBlocks(true), jsonObject));
-    
+Blockly.Java.getMainfest = function() {
     var androidIntents = "";
     var androidPermisions = "";
     for (var key in jBridgePermissionToAdd) {
@@ -1374,6 +1861,62 @@ Blockly.Java.getFormMainfest = function(formJson, packageName, forRepl) {
     }
     return Blockly.Java.genManifestString(androidPermisions, androidIntents);
     
+};
+
+Blockly.Java.initAndroidPermisionAndIntent = function(){
+    //This includes method Names or Type
+    jBridgeAndroidPermisions["receive_sms"] = "<uses-permission android:name=\"android.permission.RECEIVE_SMS\"/>\r\n\r\n    ";
+    jBridgeAndroidPermisions["send_sms"] = "<uses-permission android:name=\"android.permission.SEND_SMS\"/>\r\n\r\n    ";
+    jBridgeAndroidPermisions["voice_receive_sms"] = "<uses-permission android:name=\"com.google.android.apps.googlevoice.permission.RECEIVE_SMS\" />\r\n\r\n    ";
+    jBridgeAndroidPermisions["voice_send_sms"] = "<uses-permission android:name=\"com.google.android.apps.googlevoice.permission.SEND_SMS\" />\r\n\r\n    ";
+    jBridgeAndroidPermisions["manage_accounts"] = "<uses-permission android:name=\"android.permission.MANAGE_ACCOUNTS\" />\r\n\r\n    ";
+    jBridgeAndroidPermisions["get_accounts"] = "<uses-permission android:name=\"android.permission.GET_ACCOUNTS\" />\r\n\r\n    ";
+    jBridgeAndroidPermisions["use_credentials"] =  "<uses-permission android:name=\"android.permission.USE_CREDENTIALS\" />\r\n\r\n    ";
+    jBridgeAndroidPermisions["vibrate"] = "<uses-permission android:name=\"android.permission.VIBRATE\" />\r\n\r\n    ";
+    jBridgeAndroidPermisions["internet"] = "<uses-permission android:name=\"android.permission.INTERNET\" />\r\n\r\n    ";
+
+    jBridgeMethodAndTypeToPermisions["vibrate"] = ["vibrate"];
+    jBridgeMethodAndTypeToPermisions["tinywebdb"] = ["internet"];
+    jBridgeMethodAndTypeToPermisions["sendmessage"] = ["receive_sms","send_sms", "voice_receive_sms","voice_send_sms", "manage_accounts", "get_accounts","use_credentials"];
+    
+    //This includes method Names or Type
+    jBridgeAndroidIntents["sendmessage"] = "<receiver android:name=\"com.google.appinventor.components.runtime.util.SmsBroadcastReceiver\"\r\n\r\n          android:enabled=\"true\" android:exported=\"true\">\r\n\r\n    "
+                            + "<intent-filter>\r\n\r\n        \r\n\r\n        "
+                            + "<action android:name=\"android.provider.Telephony.SMS_RECEIVED\"/>\r\n\r\n        "
+                            + "<action android:name=\"com.google.android.apps.googlevoice.SMS_RECEIVED\"\r\n\r\n                android:permission=\"com.google.android.apps.googlevoice.permission.RECEIVE_SMS\"/>\r\n\r\n    "
+                            + "</intent-filter>\r\n\r\n"
+                            + "</receiver>\r\n\r\n    ";
+};
+
+Blockly.Java.addPermisionsAndIntents = function(name){
+  name = name.toLowerCase();
+  if(name in jBridgeMethodAndTypeToPermisions){
+    var permissions = jBridgeMethodAndTypeToPermisions[name];
+    for(var i=0; i<permissions.length; i++){
+      jBridgePermissionToAdd[permissions[i]] = true;
+    }   
+  }
+  if(name in jBridgeAndroidIntents){
+    jBridgeIntentsToAdd[name] = true; 
+  }
+};
+
+Blockly.Java.genManifestString = function(androidPermisions, androidIntents){
+  var mainfestString = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n\r\n"
+                            + "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n\r\n    package=\"com.example.redclick\"\r\n\r\n    android:versionCode=\"1\"\r\n\r\n    android:versionName=\"1.0\" >\r\n\r\n"
+                            + "<uses-sdk\r\n\r\n        android:minSdkVersion=\"8\"\r\n\r\n        android:targetSdkVersion=\"21\" />\r\n\r\n    "                  
+                            + androidPermisions
+                            + "<application\r\n\r\n        android:allowBackup=\"true\"\r\n\r\n        android:icon=\"@drawable/ic_launcher\"\r\n\r\n        android:label=\"@string/app_name\"\r\n\r\n        android:theme=\"@style/AppTheme\" >\r\n\r\n        "
+                            + "<activity\r\n\r\n            android:name=\".Screen1\"\r\n\r\n            android:label=\"@string/app_name\" >\r\n\r\n            "
+                            + "<intent-filter>\r\n\r\n                "
+                            + "<action android:name=\"android.intent.action.MAIN\" />\r\n\r\n\r\n\r\n                "
+                            + "<category android:name=\"android.intent.category.LAUNCHER\" />\r\n\r\n            "
+                            + "</intent-filter>\r\n\r\n        "
+                            + androidIntents
+                            + "</activity>\r\n\r\n        "
+                            + "</application>\r\n\r\n\r\n\r\n"
+                            + "</manifest>";
+  return mainfestString;
 };
 
 Blockly.Java.initAndroidPermisionAndIntent = function(){
