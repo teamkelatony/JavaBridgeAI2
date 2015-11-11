@@ -149,7 +149,6 @@ Blockly.Java.getFormJava = function(formJson, packageName, forRepl) {
   code.push("\n######################################\n");
 
   code.push("\n------------------------------------\n");
-  Blockly.Java.initAndroidPermisionAndIntent();
   javaCode.push(Blockly.Yail.genJBridgeCode(Blockly.mainWorkspace.getTopBlocks(true), jsonObject));
   
   if (formProperties) {
@@ -183,7 +182,6 @@ Blockly.Java.getFormJava = function(formJson, packageName, forRepl) {
     // finalCode = code.join('\n').replace(/\\(set-property.*\"\"\\)\\n*/mg, "");
   }
   var prityPrintCode = Blockly.Java.prityPrintJBridgeCode(javaCode.join('\n'));
-  var mainfestCode = Blockly.Java.getMainfest();
   return prityPrintCode;
 };
 
@@ -696,6 +694,9 @@ Blockly.Yail.parseJBridgeJsonComopnents = function (componentJson, rootName){
                +"("
                +rootName
                +");";
+  if(componentJson.$Type.toLowerCase() == "imagesprite"){
+    jBridgeInitializationList.push(root +".Initialize();");  
+  }
   jBridgeInitializationList.push(newObj);  
   if(componentJson.$Type.toLowerCase() == "imagesprite"){
     jBridgeInitializationList.push(name +".Initialize();");  
@@ -1850,7 +1851,10 @@ Blockly.Java.prityPrintIndentationJBridge = function(indendLength){
   return indentation;
 };
 
-Blockly.Java.getMainfest = function() {
+Blockly.Java.getFormMainfest = function(formJson, packageName, forRepl) {
+    Blockly.Java.initAndroidPermisionAndIntent();
+    javaCode.push(Blockly.Yail.genJBridgeCode(Blockly.mainWorkspace.getTopBlocks(true), jsonObject));
+    
     var androidIntents = "";
     var androidPermisions = "";
     for (var key in jBridgePermissionToAdd) {
