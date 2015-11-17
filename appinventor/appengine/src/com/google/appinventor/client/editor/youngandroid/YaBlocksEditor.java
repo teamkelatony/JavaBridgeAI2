@@ -347,7 +347,11 @@ public final class YaBlocksEditor extends FileEditor
                 blocksArea.getJava(myFormEditor.encodeFormAsJsonString(),
                         packageNameFromPath(getFileId())));
     }
-
+  public FileDescriptorWithContent getManifest() throws YailGenerationException {
+        return new FileDescriptorWithContent(getProjectId(), manifestFileName(),
+                blocksArea.getManifest(myFormEditor.encodeFormAsJsonString(),
+                        packageNameFromPath(getFileId())));
+    }
 
     /**
    * Converts a source file path (e.g.,
@@ -468,6 +472,12 @@ public final class YaBlocksEditor extends FileEditor
         String fileId = getFileId();
         return fileId.replace(YoungAndroidSourceAnalyzer.BLOCKLY_SOURCE_EXTENSION,
                 YoungAndroidSourceAnalyzer.JAVA_FILE_EXTENSION);
+    }
+
+  private String manifestFileName(){
+        String fileId = getFileId();
+        return fileId.replace(YoungAndroidSourceAnalyzer.BLOCKLY_SOURCE_EXTENSION,
+                YoungAndroidSourceAnalyzer.XML_FILE_EXTENSION);
     }
 
   // FormChangeListener implementation
