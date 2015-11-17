@@ -387,12 +387,12 @@ Blockly.Yail.parseJBridgeControlIfBlock = function(controlIfBlock){
   var elseIfCount = controlIfBlock.elseifCount_;
   var ifCondition = "";
   var ifStatement = "";
-  if( controlIfBlock.childBlocks_[0].category == "Logic"){
-    ifCondition = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[0]);
-    ifStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[1]);
-  }else{
+  if( controlIfBlock.childBlocks_[1].category == "Logic"){
     ifCondition = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[1]);
-    ifStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[0]);    
+    ifStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[0]);
+  }else{
+    ifCondition = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[0]);
+    ifStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[1]);    
   }
   code =  Blockly.Yail.genJBridgeControlIfBlock(ifCondition, ifStatement);  
   var index = 2 + (elseIfCount * 2);
@@ -400,12 +400,12 @@ Blockly.Yail.parseJBridgeControlIfBlock = function(controlIfBlock){
     for(var i = 2; i < index; i = i + 2){
       var elseIfCondition = "";
       var elseIfStatement = "";
-      if( controlIfBlock.childBlocks_[i].category == "Logic"){
-        elseIfCondition = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i]);
-        elseIfStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i+1]);
-      }else{
+      if( controlIfBlock.childBlocks_[i+1].category == "Logic"){
         elseIfCondition = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i+1]);
-        elseIfStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i]);    
+        elseIfStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i]);
+      }else{
+        elseIfCondition = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i]);
+        elseIfStatement = Blockly.Yail.parseBlock(controlIfBlock.childBlocks_[i+1]);    
       }
       code = code  
              + Blockly.Yail.genJBridgeControlElseIfBlock(elseIfCondition, elseIfStatement);
@@ -619,6 +619,13 @@ Blockly.Yail.parseJBridgeMethodCallBlock = function(methodCallBlock){
 
   for (var y = 0, param; param = paramsList[y]; y++){
     jBridgeParamList.push(Blockly.Yail.getJBridgeRelativeParamName(parentParamMap, param));
+  }
+  if(objectName == "TinyWebDB1" && methodName == "StoreValue"){
+    var YailList = "YailList";
+    if(!jBridgeImportsMap[YailList]){
+      jBridgeImportsMap[YailList] = "import com.google.appinventor.components.runtime.util.YailList;";
+    }
+    jBridgeParamList[1] = "YailList.makeList(" + jBridgeParamList[1] + ")";
   }
   code = Blockly.Yail.genJBridgeMethodCallBlock(objectName ,methodName, jBridgeParamList) + "\n" + code;
   return code;
@@ -1228,7 +1235,7 @@ Blockly.Yail.parseJBridgeMathCompare = function (mathBlock){
   var leftValue = Blockly.Yail.parseBlock(mathBlock.childBlocks_[0]);
   var rightValue = Blockly.Yail.parseBlock(mathBlock.childBlocks_[1]);
   var op = Blockly.Yail.getJBridgeOperator(operator);
-  if(op == "==" && leftValue.indexOf("String.valueOf(") == 0){
+  if(op == "==" && (leftValue.indexOf("String.valueOf(") == 0 || mathBlock.childBlocks_[1].category == "Text")){
     return Blockly.Yail.genJBridgeStringEqualsCompare(leftValue, rightValue, op);
   }
   return Blockly.Yail.genJBridgeMathCompare(leftValue, rightValue, op);
@@ -1424,62 +1431,6 @@ Blockly.Java.getFormMainfest = function(formJson, packageName, forRepl) {
     }
     return Blockly.Java.genManifestString(androidPermisions, androidIntents);
     
-};
-
-Blockly.Java.initAndroidPermisionAndIntent = function(){
-    //This includes method Names or Type
-    jBridgeAndroidPermisions["receive_sms"] = "<uses-permission android:name=\"android.permission.RECEIVE_SMS\"/>\r\n\r\n    ";
-    jBridgeAndroidPermisions["send_sms"] = "<uses-permission android:name=\"android.permission.SEND_SMS\"/>\r\n\r\n    ";
-    jBridgeAndroidPermisions["voice_receive_sms"] = "<uses-permission android:name=\"com.google.android.apps.googlevoice.permission.RECEIVE_SMS\" />\r\n\r\n    ";
-    jBridgeAndroidPermisions["voice_send_sms"] = "<uses-permission android:name=\"com.google.android.apps.googlevoice.permission.SEND_SMS\" />\r\n\r\n    ";
-    jBridgeAndroidPermisions["manage_accounts"] = "<uses-permission android:name=\"android.permission.MANAGE_ACCOUNTS\" />\r\n\r\n    ";
-    jBridgeAndroidPermisions["get_accounts"] = "<uses-permission android:name=\"android.permission.GET_ACCOUNTS\" />\r\n\r\n    ";
-    jBridgeAndroidPermisions["use_credentials"] =  "<uses-permission android:name=\"android.permission.USE_CREDENTIALS\" />\r\n\r\n    ";
-    jBridgeAndroidPermisions["vibrate"] = "<uses-permission android:name=\"android.permission.VIBRATE\" />\r\n\r\n    ";
-    jBridgeAndroidPermisions["internet"] = "<uses-permission android:name=\"android.permission.INTERNET\" />\r\n\r\n    ";
-
-    jBridgeMethodAndTypeToPermisions["vibrate"] = ["vibrate"];
-    jBridgeMethodAndTypeToPermisions["tinywebdb"] = ["internet"];
-    jBridgeMethodAndTypeToPermisions["sendmessage"] = ["receive_sms","send_sms", "voice_receive_sms","voice_send_sms", "manage_accounts", "get_accounts","use_credentials"];
-    
-    //This includes method Names or Type
-    jBridgeAndroidIntents["sendmessage"] = "<receiver android:name=\"com.google.appinventor.components.runtime.util.SmsBroadcastReceiver\"\r\n\r\n          android:enabled=\"true\" android:exported=\"true\">\r\n\r\n    "
-                            + "<intent-filter>\r\n\r\n        \r\n\r\n        "
-                            + "<action android:name=\"android.provider.Telephony.SMS_RECEIVED\"/>\r\n\r\n        "
-                            + "<action android:name=\"com.google.android.apps.googlevoice.SMS_RECEIVED\"\r\n\r\n                android:permission=\"com.google.android.apps.googlevoice.permission.RECEIVE_SMS\"/>\r\n\r\n    "
-                            + "</intent-filter>\r\n\r\n"
-                            + "</receiver>\r\n\r\n    ";
-};
-
-Blockly.Java.addPermisionsAndIntents = function(name){
-  name = name.toLowerCase();
-  if(name in jBridgeMethodAndTypeToPermisions){
-    var permissions = jBridgeMethodAndTypeToPermisions[name];
-    for(var i=0; i<permissions.length; i++){
-      jBridgePermissionToAdd[permissions[i]] = true;
-    }   
-  }
-  if(name in jBridgeAndroidIntents){
-    jBridgeIntentsToAdd[name] = true; 
-  }
-};
-
-Blockly.Java.genManifestString = function(androidPermisions, androidIntents){
-  var mainfestString = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n\r\n"
-                            + "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n\r\n    package=\"com.example.redclick\"\r\n\r\n    android:versionCode=\"1\"\r\n\r\n    android:versionName=\"1.0\" >\r\n\r\n"
-                            + "<uses-sdk\r\n\r\n        android:minSdkVersion=\"8\"\r\n\r\n        android:targetSdkVersion=\"21\" />\r\n\r\n    "                  
-                            + androidPermisions
-                            + "<application\r\n\r\n        android:allowBackup=\"true\"\r\n\r\n        android:icon=\"@drawable/ic_launcher\"\r\n\r\n        android:label=\"@string/app_name\"\r\n\r\n        android:theme=\"@style/AppTheme\" >\r\n\r\n        "
-                            + "<activity\r\n\r\n            android:name=\".Screen1\"\r\n\r\n            android:label=\"@string/app_name\" >\r\n\r\n            "
-                            + "<intent-filter>\r\n\r\n                "
-                            + "<action android:name=\"android.intent.action.MAIN\" />\r\n\r\n\r\n\r\n                "
-                            + "<category android:name=\"android.intent.category.LAUNCHER\" />\r\n\r\n            "
-                            + "</intent-filter>\r\n\r\n        "
-                            + androidIntents
-                            + "</activity>\r\n\r\n        "
-                            + "</application>\r\n\r\n\r\n\r\n"
-                            + "</manifest>";
-  return mainfestString;
 };
 
 Blockly.Java.initAndroidPermisionAndIntent = function(){
