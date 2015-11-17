@@ -56,13 +56,7 @@ import com.google.common.io.CharStreams;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -105,6 +99,8 @@ public final class YoungAndroidProjectService extends CommonProjectService {
       YoungAndroidSourceAnalyzer.YAIL_FILE_EXTENSION;
   private static final String JAVA_FILE_EXTENSION =
             YoungAndroidSourceAnalyzer.JAVA_FILE_EXTENSION;
+  private static final String XML_FILE_EXTENSION =
+            YoungAndroidSourceAnalyzer.XML_FILE_EXTENSION;
 
   public static final String PROJECT_PROPERTIES_FILE_NAME = PROJECT_DIRECTORY + "/" +
       "project.properties";
@@ -381,9 +377,6 @@ public final class YoungAndroidProjectService extends CommonProjectService {
     String yailFileName = YoungAndroidYailNode.getYailFileId(qualifiedFormName);
     String yailFileContents = "";
 
-    String javaFileName = YoungAndroidJavaNode.getJavaFileId(qualifiedFormName);
-    String javaFileContents = "";
-
     Project project = new Project(projectName);
     project.setProjectType(YoungAndroidProjectNode.YOUNG_ANDROID_PROJECT_TYPE);
     // Project history not supported in legacy ode new project wizard
@@ -391,7 +384,6 @@ public final class YoungAndroidProjectService extends CommonProjectService {
     project.addTextFile(new TextFile(formFileName, formFileContents));
     project.addTextFile(new TextFile(blocklyFileName, blocklyFileContents));
     project.addTextFile(new TextFile(yailFileName, yailFileContents));
-    project.addTextFile(new TextFile(javaFileName, javaFileContents));
 
     // Create new project
     return storageIo.createProject(userId, project, getProjectSettings("", "1", "1.0", "false",
@@ -544,6 +536,8 @@ public final class YoungAndroidProjectService extends CommonProjectService {
           sourceNode = new YoungAndroidYailNode(fileId);
         }else if (fileId.endsWith(JAVA_FILE_EXTENSION)) {
             sourceNode = new YoungAndroidJavaNode(fileId);
+        }else if (fileId.endsWith(XML_FILE_EXTENSION)) {
+            sourceNode = new YoungAndroidManifestNode(fileId);
         }
         if (sourceNode != null) {
           String packageName = StorageUtil.getPackageName(sourceNode.getQualifiedName());
