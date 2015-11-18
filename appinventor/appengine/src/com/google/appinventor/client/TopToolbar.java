@@ -1085,17 +1085,18 @@ public class TopToolbar extends Composite {
                                             Ode.getInstance().getProjectService().deleteFile(sessionId,projectId,"src/appinventor/ai_test/"+projectName+"/Screen1.java",  new OdeAsyncCallback<Long>(MESSAGES.deleteFileError()) {
                                                 @Override
                                                 public void onSuccess(Long date) {
-                                                    Ode.getInstance().getProjectService().deleteFile(sessionId,projectId,"src/appinventor/ai_test/"+projectName+"/Screen1.xml",  new OdeAsyncCallback<Long>(MESSAGES.deleteFileError()) {
-                                                        @Override
-                                                        public void onSuccess(Long date) {
+//
+                                                }
+//
+//                                                @Override
+                                                public void onFailure(Throwable caught) {
+//
+                                                }
+                                            });
+                                            Ode.getInstance().getProjectService().deleteFile(sessionId,projectId,"src/appinventor/ai_test/"+projectName+"/Screen1.xml",  new OdeAsyncCallback<Long>(MESSAGES.deleteFileError()) {
+                                                @Override
+                                                public void onSuccess(Long date) {
 
-                                                        }
-
-                                                        @Override
-                                                        public void onFailure(Throwable caught) {
-
-                                                        }
-                                                    });
                                                 }
 
                                                 @Override
@@ -1106,6 +1107,7 @@ public class TopToolbar extends Composite {
 
                                         }
                                     });
+
 
 
                         }
