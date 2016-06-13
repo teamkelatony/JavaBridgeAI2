@@ -350,10 +350,10 @@ Blockly.Yail.genJBridgeDispatchEvent = function(){
 
 Blockly.Yail.genJBridgeEventMethods = function(){
   var code;
-  if (jBridgeEventMethodsList.length > 0){
-    code = "\n//Event Methods\n"
-        + jBridgeEventMethodsList.join("\n")
-        +"\n";
+  if (jBridgeEventMethodsList.length > 0) {
+      code = "\n//Event Methods\n"
+          + jBridgeEventMethodsList.join("\n")
+          + "\n";
   }
   return code;
 }
@@ -942,10 +942,11 @@ Blockly.Yail.genJBridgeEventBlock = function(componentName, eventName, body){
   return code;
 };
 
+//adds even methods to list of methods that will be added to code at the end of block parsing
 Blockly.Yail.addComponentEventMethod = function(eventMethodName, body){
   var code = "\npublic void " + eventMethodName + "(){\n"
     + body
-    + "\n}"
+    + "\n}";
   jBridgeEventMethodsList.push(code);
 }
 
