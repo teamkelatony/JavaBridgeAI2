@@ -2241,23 +2241,25 @@ public class ObjectifyStorageIo implements  StorageIo {
                                 // Skip legacy remix history files that were previous stored with the project
                                 continue;
                             }
-                            if(fileName.startsWith("eclipse")) {
-                                fileData.add(fd);
+                            if(fileName.startsWith(fileName)) {
                                 foundFiles = true;
                             }
-                            else if (fileName.startsWith("assets")){
+                            //renaming project files
+                            if (fileName.startsWith("assets")){
                                 FileData assets = fd;
-                                assets.fileName = "eclipse/"+fd.fileName;
+                                assets.fileName = fileName;
                                 fileData.add(assets);
                             }
                             else if(fileName.endsWith(".java")){
                                 FileData javaFile = fd;
-                                javaFile.fileName = "eclipse/src/org/appinventor/Screen1.java";
+                                String path = javaFile.fileName;
+                                String screenName = path.substring(path.lastIndexOf('/'), path.length());
+                                javaFile.fileName = "/src/org/appinventor/" + screenName;
                                 fileData.add(javaFile);
                             }
                             else if(fileName.endsWith(".xml")){
                                 FileData xmlFile = fd;
-                                xmlFile.fileName = "eclipse/AndroidManifest.xml";
+                                xmlFile.fileName = "/AndroidManifest.xml";
                                 fileData.add(xmlFile);
                             }
 
@@ -2274,7 +2276,7 @@ public class ObjectifyStorageIo implements  StorageIo {
                         byte[] fileContent1 = new byte[javaBridge.available()];
                         javaBridge.read(fileContent1);
                         FileData fd = new FileData();
-                        fd.fileName = "eclipse/lib/AIBridge.jar";
+                        fd.fileName = "lib/AIBridge.jar";
                         fd.content = fileContent1;
                         fileData.add(fd);
                     } catch (IOException e) {
@@ -2285,7 +2287,7 @@ public class ObjectifyStorageIo implements  StorageIo {
                         byte[] fileContent2 = new byte[android.available()];
                         android.read(fileContent2);
                         FileData fd = new FileData();
-                        fd.fileName = "eclipse/lib/android-support-v4.jar";
+                        fd.fileName = "lib/android-support-v4.jar";
                         fd.content = fileContent2;
                         fileData.add(fd);
                     } catch (IOException e) {
@@ -2296,7 +2298,7 @@ public class ObjectifyStorageIo implements  StorageIo {
                         byte[] fileContent3 = new byte[icon.available()];
                         icon.read(fileContent3);
                         FileData fd = new FileData();
-                        fd.fileName = "eclipse/res/drawable/ic_launcher.png";
+                        fd.fileName = "res/drawable/ic_launcher.png";
                         fd.content = fileContent3;
                         fileData.add(fd);
                     } catch (IOException e) {

@@ -365,7 +365,9 @@ public final class EditorManager {
                         YaBlocksEditor yaBlocksEditor = (YaBlocksEditor) fileEditor;
                         try {
                             yailFiles.add(yaBlocksEditor.getJava());
+                            OdeLog.log("successful generation");
                         } catch (YailGenerationException e) {
+                            OdeLog.log("Un-successful generation");
                             ErrorReporter.reportInfo(MESSAGES.yailGenerationError(e.getFormName(),
                                     e.getMessage()));
                             if (failureCommand != null) {
