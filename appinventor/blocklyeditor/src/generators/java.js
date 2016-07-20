@@ -1093,12 +1093,14 @@ Blockly.Yail.addComponentEventMethod = function(eventMethodName, body){
   jBridgeEventMethodsList.push(code);
 }
 
+
 /**
- * Generates parameters for each individual method name
- *
- * @param {String} body that contains the entire code generation
- * @returns {String} the generated code if there were no errors.
- */
+ * This method searches the body of the generated method for the dispatch event
+ * parameters. If any parameters are used within the method then they must be passed in
+ * as the method's parameter for use in the local scope
+ * @param body The body of the generated event method
+ * @return .....
+ * */
 Blockly.Yail.createMethodParameterString = function (body) {
     var parameters = [];
     if (body.search("component") >= 0) {
