@@ -2223,7 +2223,7 @@ public class ObjectifyStorageIo implements  StorageIo {
         final Result<String> projectName = new Result<String>();
         projectName.t = null;
         String fileName = null;
-
+        
         ByteArrayOutputStream zipFile = new ByteArrayOutputStream();
         final ZipOutputStream out = new ZipOutputStream(zipFile);
 
@@ -2232,15 +2232,15 @@ public class ObjectifyStorageIo implements  StorageIo {
             runJobWithRetries(new JobRetryHelper() {
                 @Override
                 public void run(Objectify datastore) {
-                    Key<ProjectData> projectKey = projectKey(projectId);
+                    Key<ProjectData> projectKey = projectKey(projectId);                    
                     boolean foundFiles = false;
-                    for (FileData fd : datastore.query(FileData.class).ancestor(projectKey)) {
+                    for (FileData fd : datastore.query(FileData.class).ancestor(projectKey)) {                        
                         String fileName = fd.fileName;
                         if (fd.role.equals(FileData.RoleEnum.SOURCE)) {
                             if (fileName.equals(FileExporter.REMIX_INFORMATION_FILE_PATH)) {
                                 // Skip legacy remix history files that were previous stored with the project
                                 continue;
-                            }
+                            }                          
                             if(fileName.startsWith(fileName)) {
                                 foundFiles = true;
                             }
@@ -2257,9 +2257,9 @@ public class ObjectifyStorageIo implements  StorageIo {
                                 javaFile.fileName = "/src/org/appinventor/" + screenName;
                                 fileData.add(javaFile);
                             }
-                            else if(fileName.endsWith(".xml")){
+                            else if(fileName.endsWith(".xml")){                                
                                 FileData xmlFile = fd;
-                                xmlFile.fileName = "/AndroidManifest.xml";
+                                xmlFile.fileName = "/AndroidManifest.xml";                                
                                 fileData.add(xmlFile);
                             }
 
@@ -2469,7 +2469,7 @@ public class ObjectifyStorageIo implements  StorageIo {
         projectSourceZip.setMetadata(projectName.t);
         return projectSourceZip;
     }
-
+    
   @Override
   public Motd getCurrentMotd() {
     final Result<Motd> motd = new Result<Motd>();
