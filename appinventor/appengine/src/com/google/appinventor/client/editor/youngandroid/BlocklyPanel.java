@@ -19,6 +19,10 @@ import com.google.appinventor.shared.settings.SettingsConstants;
 import com.google.common.collect.Sets;
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.GWT;
+
+import com.google.common.collect.Maps;
+
+import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.JavaScriptException;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -331,8 +335,8 @@ public class BlocklyPanel extends HTMLPanel {
     DesignToolbar.popScreen();
   }
 
-  public void getBlocksImage(Callback<String, String> callback) {
-    doFetchBlocksImage(callback);
+  public void getBlocksImage(Callback callback) {
+    doFetchBlocksImage(formName, callback);
   }
 
   // The code below (4 methods worth) is for creating a GWT dialog box
@@ -1002,4 +1006,14 @@ public class BlocklyPanel extends HTMLPanel {
     }
   }
 
+    public static native void doFetchBlocksImage(String formName, Callback<String,String> callback) /*-{
+      var callb = $entry(function(result, error) {
+        if (error) {
+          callback.@com.google.gwt.core.client.Callback::onFailure(Ljava/lang/Object;)(error);
+        } else {
+          callback.@com.google.gwt.core.client.Callback::onSuccess(Ljava/lang/Object;)(result);
+        }
+      });
+      $wnd.Blocklies[formName].ExportBlocksImage.getUri(callb);
+    }-*/;
 }

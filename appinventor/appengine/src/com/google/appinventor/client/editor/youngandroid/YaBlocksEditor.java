@@ -301,7 +301,7 @@ public final class YaBlocksEditor extends FileEditor
   }
 
   @Override
-  public void getBlocksImage(Callback<String, String> callback) {
+  public void getBlocksImage(Callback callback) {
     blocksArea.getBlocksImage(callback);
   }
 

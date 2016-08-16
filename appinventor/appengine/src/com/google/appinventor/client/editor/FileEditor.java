@@ -174,4 +174,7 @@ public abstract class FileEditor extends Composite {
   public void makeActiveWorkspace() {
   }
 
+  public void getBlocksImage(Callback callback) {
+  }
+
 }

@@ -599,7 +599,7 @@ public final class YaFormEditor extends SimpleEditor implements FormChangeListen
   }
 
   @Override
-  public void getBlocksImage(Callback<String, String> callback) {
+  public void getBlocksImage(Callback callback) {
     YaProjectEditor yaProjectEditor = (YaProjectEditor) projectEditor;
     YaBlocksEditor blockEditor = yaProjectEditor.getBlocksFileEditor(formNode.getFormName());
     blockEditor.getBlocksImage(callback);
