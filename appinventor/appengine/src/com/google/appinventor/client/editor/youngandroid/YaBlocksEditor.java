@@ -288,7 +288,6 @@ public final class YaBlocksEditor extends FileEditor
     // Clear and hide the blocks selector tree
     sourceStructureExplorer.clearTree();
     hideComponentBlocks();
-    blocksArea.hideChaff();
   }
 
   @Override
@@ -347,10 +346,9 @@ public final class YaBlocksEditor extends FileEditor
                 blocksArea.getJava(myFormEditor.encodeFormAsJsonString(false),
                         packageNameFromPath(getFileId())));
     }
-  public FileDescriptorWithContent getManifest() throws YailGenerationException {
+  public FileDescriptorWithContent getManifestJSONData() throws YailGenerationException {
         return new FileDescriptorWithContent(getProjectId(), manifestFileName(),
-                blocksArea.getManifest(myFormEditor.encodeFormAsJsonString(false),
-                        packageNameFromPath(getFileId())));
+                blocksArea.getManifestJSONData(myFormEditor.encodeFormAsJsonString(false)));
     }
 
     /**
