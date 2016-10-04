@@ -6,6 +6,7 @@
 
 package com.google.appinventor.client;
 
+import java.util.List;
 import java.util.Random;
 
 import java.util.logging.Logger;
@@ -782,13 +783,14 @@ public class Ode implements EntryPoint {
                   @Override
                   public void execute() {
                     Downloader.getInstance().download(ServerLayout.downloadJavaFilePath(projectId, userName, projectName, javaFileName));
-                    OdeAsyncCallback<Long> callback = new OdeAsyncCallback<Long>() {
+                    AsyncCallback<Long> callback = new OdeAsyncCallback<Long>() {
                       @Override
                       public void onSuccess(Long result) {
 
                       }
                     };
-                    Ode.getInstance().getProjectService().deleteFile(sessionId, projectId, Ode.getInstance().getSessionId(), projectId, "src/appinventor/ai_" + Ode.getInstance().getUser().getUserName()+"/" + projectName + "/" + javaFileName, callback);
+                    String path = "src/appinventor/ai_" + Ode.getInstance().getUser().getUserName()+"/gen/" + projectName + "/" + javaFileName;
+                    Ode.getInstance().getProjectService().deleteFile(sessionId, projectId, path, callback);
 
                   }
                 });
