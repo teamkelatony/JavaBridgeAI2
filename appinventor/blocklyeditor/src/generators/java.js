@@ -3206,7 +3206,7 @@ Blockly.Java.genJBridgeMathRandomFloatBlock = function(){
   * @param {String} textBlock
   * @returns {String} code generated if no errors, as a result of genJBridgeTextChangeCaseBlock
   */
-Blockly.Java.JJBridgeTextChangeCaseBlock = function(textBlock){
+ Blockly.Java.parseJBridgeTextChangeCaseBlock = function(textBlock){
     var operator = textBlock.getFieldValue("OP");
     var op = "toLowerCase()";
     if(operator == "UPCASE"){
