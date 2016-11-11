@@ -258,7 +258,6 @@ public class BlocklyPanel extends HTMLPanel {
     }
   }
     public String getJava(String formJson, String packageName) throws YailGenerationException {
-        OdeLog.log(formJson);
         if (!blocksInited(formName)) {
             throw new YailGenerationException("Blocks area is not initialized yet", formName);
         }
