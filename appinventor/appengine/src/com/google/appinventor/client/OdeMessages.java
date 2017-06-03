@@ -360,7 +360,7 @@ public interface OdeMessages extends Messages {
 
   // Used in Ode.java
 
-  @DefaultMessage("MIT App Inventor")
+  @DefaultMessage("App Inventor Java Bridge")
   @Description("Title for App Inventor")
   String titleYoungAndroid();
 
@@ -676,7 +676,7 @@ public interface OdeMessages extends Messages {
   String generateYailMenuItem();
 
   //Help
-  @DefaultMessage("Help")
+  @DefaultMessage("Java Bridge Help")
   @Description("Label for the Help menu")
   String helpTabName();
 
@@ -724,7 +724,7 @@ public interface OdeMessages extends Messages {
   @Description("Name of Forums link")
   String forumsMenuItem();
 
-  @DefaultMessage("Report an Issue")
+  @DefaultMessage("Java Bridge Forum")
   @Description("Link for Report an Issue form")
   String feedbackMenuItem();
 
