@@ -208,99 +208,64 @@ public class DesignToolbar extends Toolbar {
   }
 
   public void showJBridgeWindow(){
-      final PopupPanel jBridgePanel = new PopupPanel(false);
-      jBridgePanel.addStyleName("genpanel-popup_panel");
+    final PopupPanel jBridgePanel = new PopupPanel(false);
+    jBridgePanel.addStyleName("genpanel-popup_panel");
 
-      FlowPanel topTitleBar = new FlowPanel();
-      Label genTitle = new Label("App Inventor Java Bridge");
-      Label genSubTitle = new Label("View the Java equivalent of your App Inventor apps!");
-      genSubTitle.addStyleName("genpanel-subtitle");
-      topTitleBar.add(genTitle);
-      topTitleBar.add(genSubTitle);
-      topTitleBar.addStyleName("genpanel-titleBar");
+    FlowPanel topTitleBar = new FlowPanel();
+    Label genTitle = new Label("App Inventor Java Bridge");
+    Label genSubTitle = new Label("View the Java equivalent of your App Inventor apps!");
+    genSubTitle.addStyleName("genpanel-subtitle");
+    topTitleBar.add(genTitle);
+    topTitleBar.add(genSubTitle);
+    topTitleBar.addStyleName("genpanel-titleBar");
 
-      Label currentProjectName = new Label();
-      currentProjectName.addStyleName("genpanel-projectName");
+    Label currentProjectName = new Label();
+    currentProjectName.addStyleName("genpanel-projectName");
 
-      Grid genButtonsGrid = new Grid(2, 2);
-      Label genJavaFileDesc = new Label("Shows the Java code equivalent for the current " +
-                                                "open Screen");
-      genJavaFileDesc.addStyleName("genpanel-genButton-Description");
-      Label genJavaProjDesc = new Label("Generates a Java project that can be " +
-                                                "imported into Android " +
-                                                "Studio or Eclipse");
-      genJavaProjDesc.addStyleName("genpanel-genButton-Description");
-      Button genJavaFileButton = new Button("Java File");
-      genJavaFileButton.addStyleName("genpanel-genButton");
-      Button genJavaProjButton = new Button("Java Project");
-      genJavaProjButton.addStyleName("genpanel-genButton");
-      genButtonsGrid.setWidget(0, 0, genJavaFileButton);
-      genButtonsGrid.setWidget(1, 0, genJavaFileDesc);
-      genButtonsGrid.setWidget(0, 1, genJavaProjButton);
-      genButtonsGrid.setWidget(1, 1, genJavaProjDesc);
-      genButtonsGrid.addStyleName("genpanel-buttonGrid");
+    Grid genButtonsGrid = new Grid(2, 2);
+    Label genJavaFileDesc = new Label("Shows the Java code equivalent for the current " +
+            "open Screen");
+    genJavaFileDesc.addStyleName("genpanel-genButton-Description");
+    Label genJavaProjDesc = new Label("Generates a Java project that can be " +
+            "imported into Android " +
+            "Studio or Eclipse");
+    genJavaProjDesc.addStyleName("genpanel-genButton-Description");
+    Button genJavaFileButton = new Button("Java File");
+    genJavaFileButton.addStyleName("genpanel-genButton");
+    Button genJavaProjButton = new Button("Java Project");
+    genJavaProjButton.addStyleName("genpanel-genButton");
+    genButtonsGrid.setWidget(0, 0, genJavaFileButton);
+    genButtonsGrid.setWidget(1, 0, genJavaFileDesc);
+    genButtonsGrid.setWidget(0, 1, genJavaProjButton);
+    genButtonsGrid.setWidget(1, 1, genJavaProjDesc);
+    genButtonsGrid.addStyleName("genpanel-buttonGrid");
 
-      HTML seperatorLine = new HTML();
-      seperatorLine.addStyleName("genpanel-hr");
+    HTML seperatorLine = new HTML();
+    seperatorLine.addStyleName("genpanel-hr");
 
-      HTML helpList = new HTML("<ul>\n" +
-                                       "\t<li><a target=\"_blank\" href=\"https://docs.google.com/document/d/1oW7DSgy_Dx0LGnmf8kh7yytC6s3tZnrZsybI83op8nI/edit?usp=sharing\">Setting up your Java Project in Android Studio</a> (Preferred)</li>" +
-                                       "\t<li><a target=\"_blank\" href=\"https://docs.google.com/document/d/1VRXZOnNkcxlDgn589p7jrST377bG7FQOU2mm20yUoQo/edit?usp=sharing\">Setting up your Java Project in Eclipse</a></li>" +
-                                       "</u>");
-      helpList.addStyleName("genpanel-genInstructions");
+    HTML helpList = new HTML("<ul>\n" +
+            "\t<li><a target=\"_blank\" href=\"https://docs.google.com/document/d/1oW7DSgy_Dx0LGnmf8kh7yytC6s3tZnrZsybI83op8nI/edit?usp=sharing\">Setting up your Java Project in Android Studio</a></li>" +
+            "\t<br><br><li><a target=\"_blank\" href=\"http://www.appinventor.org/jbridge\">Learn More</a></li>" +
+            "</u>");
+    helpList.addStyleName("genpanel-genInstructions");
 
-      Button closeWindownButton = new Button("close");
+    Button closeWindownButton = new Button("close");
 
-      HTML moreInfoBar = new HTML();
+    HTML moreInfoBar = new HTML();
 
-      if (Ode.getInstance().getCurrentYoungAndroidProjectRootNode() == null){
-          currentProjectName.setText("No project is currently open");
-          genJavaFileButton.setEnabled(false);
-          genJavaProjButton.setEnabled(false);
-          genJavaFileButton.setStyleName("genpanel-disabled-genButton");
-          genJavaProjButton.setStyleName("genpanel-disabled-genButton");
-      }else {
-          currentProjectName.setText(Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName());
-          genJavaFileButton.setEnabled(true);
-          genJavaProjButton.setEnabled(true);
-          genJavaFileButton.setStyleName("genpanel-genButton");
-          genJavaProjButton.setStyleName("genpanel-genButton");
-      }
-
-      FlowPanel content = new FlowPanel();
-      content.add(topTitleBar);
-      content.add(currentProjectName);
-      content.add(genButtonsGrid);
-      content.add(seperatorLine);
-      content.add(helpList);
-      content.add(closeWindownButton);
-
-      closeWindownButton.addClickHandler(new ClickHandler() {
-          @Override
-          public void onClick(ClickEvent event) {
-              jBridgePanel.hide();
-          }
-      });
-
-      genJavaFileButton.addClickHandler(new ClickHandler() {
-          @Override
-          public void onClick(ClickEvent event) {
-              new GenerateJavaAction().execute();
-          }
-      });
-
-      genJavaProjButton.addClickHandler(new ClickHandler() {
-          @Override
-          public void onClick(ClickEvent event) {
-              new ExportJavaProjectAction().execute();
-          }
-      });
-
-      jBridgePanel.add(content);
-      jBridgePanel.setHeight("530px");
-      jBridgePanel.setWidth("800px");
-      jBridgePanel.show();
-      jBridgePanel.center();
+    if (Ode.getInstance().getCurrentYoungAndroidProjectRootNode() == null){
+      currentProjectName.setText("No project is currently open");
+      genJavaFileButton.setEnabled(false);
+      genJavaProjButton.setEnabled(false);
+      genJavaFileButton.setStyleName("genpanel-disabled-genButton");
+      genJavaProjButton.setStyleName("genpanel-disabled-genButton");
+    }else {
+      currentProjectName.setText(Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName());
+      genJavaFileButton.setEnabled(true);
+      genJavaProjButton.setEnabled(true);
+      genJavaFileButton.setStyleName("genpanel-genButton");
+      genJavaProjButton.setStyleName("genpanel-genButton");
+    }
   }
 
   public class ShowJBridgeWindowAction implements Command{
