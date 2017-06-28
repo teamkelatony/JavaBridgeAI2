@@ -16,10 +16,10 @@ goog.require('Blockly.Generator');
 Blockly.Yail = new Blockly.Generator('Yail');
 
 /**
- * List of illegal variable names. This is not intended to be a security feature.  Blockly is 
+ * List of illegal variable names. This is not intended to be a security feature.  Blockly is
  * 100% client-side, so bypassing this list is trivial.  This is intended to prevent users from
  * accidentally clobbering a built-in object or function.
- * 
+ *
  * TODO: fill this in or remove it.
  * @private
  */
@@ -95,7 +95,7 @@ Blockly.Yail.FLONUM_REGEXP = "^[\\s]*[-+]?([0-9]*)((\\.[0-9]+)|[0-9]\\.)[\\s]*$"
 
 /**
  * Generate the Yail code for this blocks workspace, given its associated form specification.
- * 
+ *
  * @param {String} formJson JSON string describing the contents of the form. This is the JSON
  *    content from the ".scm" file for this form.
  * @param {String} packageName the name of the package (to put in the define-form call)
@@ -104,10 +104,10 @@ Blockly.Yail.FLONUM_REGEXP = "^[\\s]*[-+]?([0-9]*)((\\.[0-9]+)|[0-9]\\.)[\\s]*$"
  * @returns {String} the generated code if there were no errors.
  */
 Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
-  var jsonObject = JSON.parse(formJson); 
+  var jsonObject = JSON.parse(formJson);
   // TODO: check for JSON parse error
   var componentNames = [];
-  var formProperties; 
+  var formProperties;
   var formName;
   var code = [];
   if (jsonObject.Properties) {
@@ -123,9 +123,9 @@ Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
   if (!forRepl) {
     code.push(Blockly.Yail.getYailPrelude(packageName, formName));
   }
-    
+
   var componentMap = workspace.buildComponentMap([], [], false, false);
-  
+
   for (var comp in componentMap.components)
     if (componentMap.components.hasOwnProperty(comp))
       componentNames.push(comp);
@@ -134,37 +134,37 @@ Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
   for (var i = 0, block; block = globalBlocks[i]; i++) {
     code.push(Blockly.Yail.blockToCode(block));
   }
-  
+
   if (formProperties) {
     var sourceType = jsonObject.Source;
     if (sourceType == "Form") {
-      code = code.concat(Blockly.Yail.getComponentLines(formName, formProperties, null /*parent*/, 
+      code = code.concat(Blockly.Yail.getComponentLines(formName, formProperties, null /*parent*/,
           componentMap, false /*forRepl*/, propertyNameConverter, workspace.getComponentDatabase()));
     } else {
       throw "Source type " + sourceType + " is invalid.";
     }
-  
+
     // Fetch all of the components in the form, this may result in duplicates
     componentNames = Blockly.Yail.getDeepNames(formProperties, componentNames);
     // Remove the duplicates
     componentNames = componentNames.filter(function(elem, pos) {
-        return componentNames.indexOf(elem) == pos});
+      return componentNames.indexOf(elem) == pos});
 
     // Add runtime initializations
     code.push(Blockly.Yail.YAIL_INIT_RUNTIME);
-  
+
     if (forRepl) {
       code = Blockly.Yail.wrapForRepl(formName, code, componentNames);
     }
 
     // TODO?: get rid of empty property assignments? I'm not convinced this is necessary.
-    // The original code in YABlockCompiler.java attempts to do this, but it matches on 
+    // The original code in YABlockCompiler.java attempts to do this, but it matches on
     // "set-property" rather than "set-and-coerce-property" so I'm not sure it is actually
     // doing anything. If we do need this, something like the call below might work.
-    // 
+    //
     // finalCode = code.join('\n').replace(/\\(set-property.*\"\"\\)\\n*/mg, "");
   }
-  
+
   return code.join('\n');  // Blank line between each section.
 };
 
@@ -181,13 +181,13 @@ Blockly.Yail.getDeepNames = function(componentJson, componentNames) {
 
 /**
  * Generate the beginning Yail code for an APK compilation (i.e., not the REPL)
- * 
+ *
  * @param {String} packageName  the name of the package for the app
  *     (e.g. "appinventor.ai_somebody.myproject.Screen1")
  * @param {String} formName  (e.g., "Screen1")
  * @returns {String} Yail code
  * @private
-*/
+ */
 Blockly.Yail.getYailPrelude = function(packageName, formName) {
  return "#|\n$Source $Yail\n|#\n\n"
      + Blockly.Yail.YAIL_DEFINE_FORM
@@ -200,8 +200,8 @@ Blockly.Yail.getYailPrelude = function(packageName, formName) {
 
 /**
  * Wraps Yail code for use in the REPL and returns the new code as an array of strings
- * 
- * @param {String} formName 
+ *
+ * @param {String} formName
  * @param {Array} code  code strings to be wrapped
  * @param {Array} componentNames array of component names
  * @returns {Array} wrapped code strings
@@ -263,7 +263,7 @@ Blockly.Yail.getComponentInitializationString = function(formName, componentName
  * @returns {Array} code strings
  * @private
  */
-Blockly.Yail.getComponentLines = function(formName, componentJson, parentName, componentMap, 
+Blockly.Yail.getComponentLines = function(formName, componentJson, parentName, componentMap,
   forRepl, nameConverter, componentDb) {
   var code = [], i, block, child;
   var componentName = componentJson.$Name;
@@ -292,14 +292,14 @@ Blockly.Yail.getComponentLines = function(formName, componentJson, parentName, c
           componentMap, forRepl, nameConverter, componentDb));
     }
   }
-  return code;  
+  return code;
 };
 
 /**
  * Generate Yail to add the component described by componentJson to its parent, followed by
  * the code that sets each property of the component (for all its properties listed in
  * componentJson).
- * 
+ *
  * @param {String} formName
  * @param {String} componentJson JSON string describing the component
  * @param {String} parentName  the name of the component that contains this component (which may be
@@ -311,7 +311,7 @@ Blockly.Yail.getComponentLines = function(formName, componentJson, parentName, c
  * @returns {Array} code strings
  * @private
  */
-Blockly.Yail.getComponentPropertiesLines = function(formName, componentJson, parentName, 
+Blockly.Yail.getComponentPropertiesLines = function(formName, componentJson, parentName,
   includeComments, nameConverter, componentDb) {
   var code = [];
   var componentName = componentJson.$Name;
@@ -334,7 +334,7 @@ Blockly.Yail.getComponentPropertiesLines = function(formName, componentJson, par
 
 /**
  * Generate Yail to set the properties for the Form described by componentJson.
- * 
+ *
  * @param {String} formName
  * @param {String} componentJson JSON string describing the component
  * @param {Boolean} includeComments whether to include comments in the generated code
@@ -348,13 +348,13 @@ Blockly.Yail.getFormPropertiesLines = function(formName, componentJson, includeC
   }
   var yailForComponentProperties = Blockly.Yail.getPropertySettersLines(componentJson, formName, componentDb);
   if (yailForComponentProperties.length > 0) {
-    // getPropertySettersLine returns an array of lines.  So we need to 
+    // getPropertySettersLine returns an array of lines.  So we need to
     // concatenate them (using join) before pushing them onto the Yail expression.
     // WARNING:  There may be other type errors of this sort in this file, which
     // (hopefully) will be uncovered in testing. Please
     // be alert for these errors and check carefully.
-    code.push(Blockly.Yail.YAIL_DO_AFTER_FORM_CREATION + yailForComponentProperties.join(" ") + 
-      Blockly.Yail.YAIL_CLOSE_BLOCK);
+    code.push(Blockly.Yail.YAIL_DO_AFTER_FORM_CREATION + yailForComponentProperties.join(" ") +
+        Blockly.Yail.YAIL_CLOSE_BLOCK);
   }
   return code;
 };
@@ -379,7 +379,7 @@ Blockly.Yail.getPropertySettersLines = function(componentJson, componentName, co
   var code = [];
   for (var prop in componentJson) {
     if (prop.charAt(0) != "$" && prop != "Uuid" && prop != "TutorialURL") {
-      code.push(Blockly.Yail.getPropertySetterString(componentName, componentJson.$Type, prop, 
+      code.push(Blockly.Yail.getPropertySetterString(componentName, componentJson.$Type, prop,
         componentJson[prop], componentDb));
     }
   }
@@ -397,7 +397,7 @@ Blockly.Yail.getPropertySettersLines = function(componentJson, componentName, co
  * @returns code string
  * @private
  */
-Blockly.Yail.getPropertySetterString = function(componentName, componentType, propertyName, 
+Blockly.Yail.getPropertySetterString = function(componentName, componentType, propertyName,
     propertyValue, componentDb) {
   var code = Blockly.Yail.YAIL_SET_AND_COERCE_PROPERTY + Blockly.Yail.YAIL_QUOTE + 
     componentName + Blockly.Yail.YAIL_SPACER + Blockly.Yail.YAIL_QUOTE + propertyName + 
@@ -421,12 +421,12 @@ Blockly.Yail.getPropertySetterString = function(componentName, componentType, pr
  */
 Blockly.Yail.getPropertyValueString = function(propertyValue, propertyType) {
   if (propertyType == "'number") {
-    if (propertyValue.match(Blockly.Yail.INTEGER_REGEXP) 
-            || propertyValue.match(Blockly.Yail.FLONUM_REGEXP)) { // integer
+    if (propertyValue.match(Blockly.Yail.INTEGER_REGEXP)
+        || propertyValue.match(Blockly.Yail.FLONUM_REGEXP)) { // integer
       return propertyValue;
     } else if (propertyValue.match(Blockly.Yail.SIMPLE_HEX_PREFIX + "[0-9A-F]+")) { // hex
-      return Blockly.Yail.YAIL_HEX_PREFIX + 
-        propertyValue.substring(Blockly.Yail.SIMPLE_HEX_PREFIX.length);
+      return Blockly.Yail.YAIL_HEX_PREFIX +
+          propertyValue.substring(Blockly.Yail.SIMPLE_HEX_PREFIX.length);
     }
   } else if (propertyType == "'boolean") {
     if (-1 != propertyValue.indexOf("False")) {
@@ -557,27 +557,27 @@ Blockly.Yail.scrub_ = function(block, code, thisOnly) {
   }
   var commentCode = '';
   /* TODO: fix for Yail comments?
-  // Only collect comments for blocks that aren't inline.
-  if (!block.outputConnection || !block.outputConnection.targetConnection) {
-    // Collect comment for this block.
-    var comment = block.getCommentText();
-    if (comment) {
-      commentCode += Blockly.Generator.prefixLines(comment, '// ') + '\n';
-    }
-    // Collect comments for all value arguments.
-    // Don't collect comments for nested statements.
-    for (var x = 0; x < block.inputList.length; x++) {
-      if (block.inputList[x].type == Blockly.INPUT_VALUE) {
-        var childBlock = block.inputList[x].targetBlock();
-        if (childBlock) {
-          var comment = Blockly.Generator.allNestedComments(childBlock);
-          if (comment) {
-            commentCode += Blockly.Generator.prefixLines(comment, '// ');
-          }
-        }
-      }
-    }
-  }*/
+   // Only collect comments for blocks that aren't inline.
+   if (!block.outputConnection || !block.outputConnection.targetConnection) {
+   // Collect comment for this block.
+   var comment = block.getCommentText();
+   if (comment) {
+   commentCode += Blockly.Generator.prefixLines(comment, '// ') + '\n';
+   }
+   // Collect comments for all value arguments.
+   // Don't collect comments for nested statements.
+   for (var x = 0; x < block.inputList.length; x++) {
+   if (block.inputList[x].type == Blockly.INPUT_VALUE) {
+   var childBlock = block.inputList[x].targetBlock();
+   if (childBlock) {
+   var comment = Blockly.Generator.allNestedComments(childBlock);
+   if (comment) {
+   commentCode += Blockly.Generator.prefixLines(comment, '// ');
+   }
+   }
+   }
+   }
+   }*/
   var nextBlock = block.nextConnection && block.nextConnection.targetBlock();
   var nextCode = thisOnly ? "" : this.blockToCode(nextBlock);
   return commentCode + code + nextCode;
@@ -586,12 +586,12 @@ Blockly.Yail.scrub_ = function(block, code, thisOnly) {
 Blockly.Yail.getDebuggingYail = function() {
   var code = [];
   var componentMap = Blockly.Component.buildComponentMap([], [], false, false);
-  
+
   var globalBlocks = componentMap.globals;
   for (var i = 0; i < globalBlocks.length; i++) {
     code.push(Blockly.Yail.blockToCode(globalBlocks[i]));
   }
-  
+
   var blocks = Blockly.mainWorkspace.getTopBlocks(true);
   for (var x = 0, block; block = blocks[x]; x++) {
 
@@ -618,7 +618,7 @@ Blockly.Yail.blockToCode1 = function(block) {
   var func = this[block.type];
   if (!func) {
     throw 'Language "' + name + '" does not know how to generate code ' +
-        'for block type "' + block.type + '".';
+    'for block type "' + block.type + '".';
   }
   var code = func.call(block);
   if (code instanceof Array) {
