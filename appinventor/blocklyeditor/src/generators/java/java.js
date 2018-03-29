@@ -383,6 +383,7 @@ Blockly.Java.getFormJava = function (formJson, packageName, forRepl) {
     // catch any runtime errors
     jsonResponse[JSONKEY_SUCCESS] = JSONVALUE_UNSUCCESSFUL;
     jsonResponse[JSONKEY_ERRORS] = e;
+    console.log(e);
   }
 
   return JSON.stringify(jsonResponse);
@@ -845,7 +846,7 @@ Blockly.Java.checkInputName = function (block, inputName) {
 };
 
 Blockly.Java.hasTypeCastKey = function (key, typeCastMap) {
-  if (typeCastMap.has(key)) {
+  if (key in typeCastMap) {
     return true;
   }
   return false;
