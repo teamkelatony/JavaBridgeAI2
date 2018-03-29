@@ -238,6 +238,7 @@ var methodParamsMap = {
   'PutTextWithEncoding': {0: JAVA_STRING},
   'UriEncode': {0: JAVA_STRING},
   'XMLTextDecode': {0: JAVA_STRING},
+  'GotText': {0: JAVA_STRING, 1: JAVA_INT, 2: JAVA_STRING, 3: JAVA_STRING},
 
   //sharing
   'ShareFile': {0: JAVA_STRING},
