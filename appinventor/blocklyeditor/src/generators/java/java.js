@@ -167,6 +167,7 @@ var methodParamsMap = {
 
   //spinner
   'AfterSelecting': {0: JAVA_STRING},
+  'SelectionIndex': {0: JAVA_INT},
 
   //slider
   'PositionChanged': {0: JAVA_FLOAT},
@@ -1458,6 +1459,7 @@ Blockly.Java.castValueToString = function (block, value) {
       if (block.setOrGet == "get") {
         var property = block.property;
         if (property == undefined) {
+          // Some blocks have property value as "propertyName"
           property = block.propertyName;
         }
         var params = methodParamsMap[property];
@@ -1466,6 +1468,8 @@ Blockly.Java.castValueToString = function (block, value) {
           if (param != JAVA_STRING) {
             needsCasting = true;
           }
+        } else {
+          console.error("Block property " + property + " needs to be added to method param map")
         }
       }
     } else if (block.category == "Math") {
