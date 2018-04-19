@@ -1,4 +1,6 @@
 language: java
-before_install: cd appinventor && ant MakeAuthKey
+before_install:
+  - cd appinventor
+  - ant MakeAuthKey
 install: ant
 script: ant tests
