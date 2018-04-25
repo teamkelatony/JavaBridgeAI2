@@ -370,7 +370,7 @@ var JSONKEY_ERRORS = "errors";
  * @param {Boolean} forRepl  true if the code is being generated for the REPL, false if for an apk
  * @returns {String} the generated code if there were no errors.
  */
-Blockly.Java.getFormJava = function (formJson, packageName, forRepl) {
+Blockly.Java.getFormJava = function (formJson, packageName) {
   var screenJSONInfo = JSON.parse(formJson);
 
   var jsonResponse = new Object();

@@ -1028,6 +1028,13 @@ public class TopToolbar extends Composite {
     }
   }
 
+  private static class SwitchToUserAdminAction implements Command {
+    @Override
+    public void execute() {
+      Ode.getInstance().switchToUserAdminPanel();
+    }
+  }
+
   private class ShowJBridgeWindowAction implements Command {
     @Override
     public void execute() {

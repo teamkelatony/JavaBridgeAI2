@@ -8,6 +8,8 @@ package com.google.appinventor.components.runtime.util;
 
 import com.google.appinventor.components.runtime.errors.YailRuntimeError;
 
+import gnu.lists.Pair;
+
 import org.json.JSONException;
 
 import java.util.ArrayList;
@@ -22,7 +24,7 @@ import android.util.Log;
  * by App Inventor components.
  *
  */
-public class YailList {
+public class YailList extends Pair{
 
   private static final String LOG_TAG = "YailList";
 

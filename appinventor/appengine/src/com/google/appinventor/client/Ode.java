@@ -26,14 +26,14 @@ import com.google.appinventor.client.boxes.ProfileBox;
 import com.google.appinventor.client.boxes.PropertiesBox;
 import com.google.appinventor.client.boxes.SourceStructureBox;
 import com.google.appinventor.client.boxes.ViewerBox;
+import com.google.appinventor.client.commands.GenerateJavaProjectCommand;
+import com.google.appinventor.client.commands.GenerateJavaCommand;
 import com.google.appinventor.client.editor.EditorManager;
 import com.google.appinventor.client.editor.FileEditor;
 import com.google.appinventor.client.editor.youngandroid.BlocklyPanel;
 import com.google.appinventor.client.editor.youngandroid.TutorialPanel;
 import com.google.appinventor.client.explorer.commands.ChainableCommand;
 import com.google.appinventor.client.explorer.commands.CommandRegistry;
-import com.google.appinventor.client.explorer.commands.GenerateJavaCommand;
-import com.google.appinventor.client.explorer.commands.GenerateManifestCommand;
 import com.google.appinventor.client.explorer.commands.SaveAllEditorsCommand;
 import com.google.appinventor.client.explorer.project.Project;
 import com.google.appinventor.client.explorer.project.ProjectChangeAdapter;
@@ -712,14 +712,14 @@ public class Ode implements EntryPoint {
     genJavaFileButton.addClickHandler(new ClickHandler() {
       @Override
       public void onClick(ClickEvent event) {
-        new GenerateJavaAction().execute();
+        new GenerateJavaCommand().execute();
       }
     });
 
     genJavaProjButton.addClickHandler(new ClickHandler() {
       @Override
       public void onClick(ClickEvent event) {
-        new ExportJavaProjectAction().execute();
+        new GenerateJavaProjectCommand().execute();
       }
     });
 
@@ -728,56 +728,6 @@ public class Ode implements EntryPoint {
     jBridgePanel.setWidth("800px");
     jBridgePanel.show();
     jBridgePanel.center();
-  }
-
-  public class ExportJavaProjectAction implements Command{
-    @Override
-    public void execute() {
-      final long projectId = Ode.getInstance().getCurrentYoungAndroidProjectId();
-      final ProjectRootNode projectRootNode = Ode.getInstance().getCurrentYoungAndroidProjectRootNode();
-      final String projectName = Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName();
-      final String userName = Ode.getInstance().getUser().getUserName();
-      //generate and download project
-      ChainableCommand cmd = new SaveAllEditorsCommand(new GenerateJavaCommand(null));
-      cmd.startExecuteChain(Tracking.PROJECT_ACTION_BUILD_YAIL_YA, projectRootNode,
-              new Command() {
-                @Override
-                public void execute() {
-                  ChainableCommand cmd1 = new SaveAllEditorsCommand(new GenerateManifestCommand(null));
-                  cmd1.startExecuteChain(Tracking.PROJECT_ACTION_BUILD_YAIL_YA, projectRootNode,
-                          new Command() {
-                            @Override
-                            public void execute() {
-                              //download project
-                              Downloader.getInstance().download(ServerLayout.downloadJavaProjectPath(projectId,userName, projectName));
-                            }
-                          });
-                }
-              });
-    }
-  }
-
-  public class GenerateJavaAction implements Command {
-    @Override
-    public void execute() {
-      final ProjectRootNode projectRootNode = Ode.getInstance().getCurrentYoungAndroidProjectRootNode();
-      if (projectRootNode != null) {
-        final long projectId = Ode.getInstance().getCurrentYoungAndroidProjectId();
-        final String projectName = Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName();
-        final String javaFileName = Ode.getInstance().getCurrentFileEditor().getFileNode().getName().replace(".scm", "").replace(".bky", "") + ".java";
-        final String userName = Ode.getInstance().getUser().getUserName();
-
-        //generate and download java file
-        ChainableCommand cmd = new SaveAllEditorsCommand(new GenerateJavaCommand(null));
-        cmd.startExecuteChain(Tracking.PROJECT_ACTION_BUILD_YAIL_YA, projectRootNode,
-                new Command() {
-                  @Override
-                  public void execute() {
-                    Downloader.getInstance().download(ServerLayout.downloadJavaFilePath(projectId, userName, projectName, javaFileName));
-                  }
-                });
-      }
-    }
   }
 
   public void openYoungAndroidProjectInDesigner(final Project project) {
