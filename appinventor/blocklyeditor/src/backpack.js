@@ -2,7 +2,7 @@
  * Visual Blocks Editor
  *
  * Copyright © 2011 Google Inc.
- * Copyright © 2011-2016 Massachusetts Institute of Technology
+ * Copyright © 2011-2018 Massachusetts Institute of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ Blockly.Backpack = function(targetWorkspace, opt_options) {
   } else {
     opt_options = opt_options || {};
     this.options = new Blockly.Options(opt_options);
+    // Parsing loses this option so we have to reassign.
+    this.options.disabledPatternId = opt_options.disabledPatternId;
   }
   this.workspace_ = targetWorkspace;
   this.flyout_ = new Blockly.BackpackFlyout(this.options);
@@ -67,22 +69,21 @@ Blockly.Backpack = function(targetWorkspace, opt_options) {
  * @type {string}
  * @private
  */
-Blockly.Backpack.prototype.BPACK_CLOSED_ = 'assets/backpack-closed.png';
+Blockly.Backpack.prototype.BPACK_CLOSED_ = 'static/media/backpack-closed.png';
 
 /**
  * URL of the small backpack image.
  * @type {string}
  * @private
  */
-//Blockly.Backpack.prototype.BPACK_EMPTY_ = 'media/backpack-small-highlighted.png';
-Blockly.Backpack.prototype.BPACK_EMPTY_ = 'assets/backpack-empty.png';
+Blockly.Backpack.prototype.BPACK_EMPTY_ = 'static/media/backpack-empty.png';
 
 /**
  * URL of the full backpack image
  * @type {string}
  * @private
  */
-Blockly.Backpack.prototype.BPACK_FULL_ = 'assets/backpack-full.png';
+Blockly.Backpack.prototype.BPACK_FULL_ = 'static/media/backpack-full.png';
 
 /**
  * Width of the image.
@@ -201,10 +202,13 @@ Blockly.Backpack.prototype.createDom = function(opt_workspace) {
 
   this.svgGroup_ = Blockly.utils.createSvgElement('g', {}, null);
   this.svgBody_ = Blockly.utils.createSvgElement('image',
-      {'width': this.WIDTH_, 'height': this.BODY_HEIGHT_, 'id': 'backpackIcon'},
+      {'width': this.WIDTH_, 'height': this.BODY_HEIGHT_},
       this.svgGroup_);
   this.svgBody_.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href',
       Blockly.pathToBlockly + this.BPACK_CLOSED_);
+
+  this.svgBody_.setAttribute('class', 'blocklybackpackImage');
+
   return this.svgGroup_;
 };
 
@@ -215,23 +219,22 @@ Blockly.Backpack.prototype.init = function() {
   this.position_();
   // If the document resizes, reposition the backpack.
   Blockly.bindEvent_(window, 'resize', this, this.position_);
+  // Fixes a bug in Firefox where the backpack cannot be opened.
+  Blockly.bindEvent_(this.svgBody_, 'mousedown', this, function(e) { e.stopPropagation(); e.preventDefault(); });
   Blockly.bindEvent_(this.svgBody_, 'click', this, this.openBackpack);
-  Blockly.bindEvent_(this.svgBody_, 'contextmenu', this, this.openBackpackDoc);
+  Blockly.bindEvent_(this.svgBody_, 'contextmenu', this, this.openBackpackMenu);
   this.flyout_.init(this.workspace_);
+  this.flyout_.workspace_.isBackpack = true;
 
   // load files for sound effect
-  Blockly.getMainWorkspace().loadAudio_(['assets/backpack.mp3', 'assets/backpack.ogg', 'assets/backpack.wav'], 'backpack');
+  Blockly.getMainWorkspace().loadAudio_(['static/media/backpack.mp3', 'static/media/backpack.ogg', 'static/media/backpack.wav'], 'backpack');
 
   var p = this;
   this.getContents(function(contents) {
     if (!contents) {
       return;
     }
-    if (contents.length === 0) {
-      p.shrink();
-    } else {
-      p.grow();
-    }
+    p.resize();
   });
 };
 
@@ -370,6 +373,34 @@ Blockly.Backpack.prototype.addToBackpack = function(block, store) {
 
 };
 
+/**
+ * Remove the top-level blocks with the given IDs from the backpack.
+ * @param {!Array.<string>} ids The block IDs to be removed
+ */
+Blockly.Backpack.prototype.removeFromBackpack = function(ids) {
+  var p = this;
+  this.getContents(function(/** @type {string[]} */ contents) {
+    if (contents && contents.length) {
+      var blockInBackPack = p.flyout_.workspace_.getTopBlocks(true).map(function(elt) {
+        return elt.id;
+      });
+      var index = blockInBackPack.indexOf(ids[0]);
+      if (index >= 0) {
+        contents.splice(index, 1);
+      }
+      p.setContents(contents, true);
+      if (contents.length === 0) {
+        p.shrink();
+      }
+      if (p.flyout_.isVisible()) {
+        p.isAdded = true;
+        p.openBackpack();
+        p.isAdded = false;
+      }
+    }
+  });
+};
+
 Blockly.Backpack.prototype.hide = function() {
   this.flyout_.hide();
 };
@@ -397,9 +428,9 @@ Blockly.Backpack.prototype.position_ = function() {
 };
 
 /**
- * On right click, open alert and show documentation
+ * On right click, open alert and show documentation and backpackClear
  */
-Blockly.Backpack.prototype.openBackpackDoc = function(e) {
+Blockly.Backpack.prototype.openBackpackMenu = function(e) {
   var options = [];
   var backpackDoc = {enabled : true};
   backpackDoc.text = Blockly.Msg.SHOW_BACKPACK_DOCUMENTATION;
@@ -412,6 +443,17 @@ Blockly.Backpack.prototype.openBackpackDoc = function(e) {
                                          });
   };
   options.push(backpackDoc);
+
+  // Clear backpack.
+  var backpackClear = {enabled: true};
+  backpackClear.text = Blockly.Msg.BACKPACK_EMPTY;
+  backpackClear.callback = function() {
+    if (Blockly.getMainWorkspace().hasBackpack()) {
+      Blockly.getMainWorkspace().getBackpack().clear();
+    }
+  };
+  options.push(backpackClear);
+
   Blockly.ContextMenu.show(e, options, this.workspace_.RTL);
   // Do not propagate to Blockly, nor show the browser context menu
   //e.stopPropagation();
@@ -420,8 +462,14 @@ Blockly.Backpack.prototype.openBackpackDoc = function(e) {
 
 /**
  * On left click, open backpack and view flyout
+ *
+ * @param {?MouseEvent} e Click event if the backpack is being opened in
+ * response to a user action.
  */
-Blockly.Backpack.prototype.openBackpack = function() {
+Blockly.Backpack.prototype.openBackpack = function(e) {
+  if (e) {
+    e.stopPropagation();
+  }
   if (!this.isAdded && this.flyout_.isVisible()) {
     this.flyout_.hide();
   } else {
@@ -430,8 +478,9 @@ Blockly.Backpack.prototype.openBackpack = function() {
       var len = backpack.length;
       var newBackpack = [];
       for (var i = 0; i < len; i++) {
-        newBackpack[i] = Blockly.Xml.textToDom(backpack[i]).firstChild;
+        newBackpack[i] = Blockly.Versioning.upgradeComponentMethods(Blockly.Xml.textToDom(backpack[i]).firstChild);
       }
+      Blockly.hideChaff();
       p.flyout_.show(newBackpack);
     });
   }
@@ -499,7 +548,7 @@ Blockly.Backpack.prototype.setOpen_ = function(state) {
  * Change the image of backpack to one with red outline
  */
 Blockly.Backpack.prototype.animateBackpack_ = function() {
-  var icon = document.getElementById('backpackIcon');
+  var icon = this.svgBody_;
   if (this.isOpen){
     icon.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', Blockly.pathToBlockly + this.BPACK_EMPTY_);
   } else {
@@ -525,7 +574,7 @@ Blockly.Backpack.prototype.close = function() {
 Blockly.Backpack.prototype.grow = function() {
   if (this.isLarge)
     return;
-  var icon = document.getElementById('backpackIcon');
+  var icon = this.svgBody_;
   icon.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', Blockly.pathToBlockly + this.BPACK_FULL_);
   this.svgBody_.setAttribute('transform','scale(1.2)');
   this.MARGIN_SIDE_ = this.MARGIN_SIDE_ / 1.2;
@@ -541,7 +590,7 @@ Blockly.Backpack.prototype.grow = function() {
 Blockly.Backpack.prototype.shrink = function() {
   if (!this.isLarge)
     return;
-  var icon = document.getElementById('backpackIcon');
+  var icon = this.svgBody_;
   icon.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', Blockly.pathToBlockly + this.BPACK_CLOSED_);
   this.svgBody_.setAttribute('transform','scale(1)');
   this.BODY_HEIGHT_ = this.BODY_HEIGHT_ / 1.2;
@@ -575,6 +624,7 @@ Blockly.Backpack.prototype.count = function() {
 
 /**
  * Get the contents of the Backpack.
+ * @param {function(string[])} callback The callback to asynchronously receive the backpack contents
  * @returns {string[]} Backpack contents encoded as an array of XML strings.
  */
 Blockly.Backpack.prototype.getContents = function(callback) {
@@ -596,11 +646,7 @@ Blockly.Backpack.prototype.getContents = function(callback) {
       } else {
         var parsed = JSON.parse(content);
         Blockly.Backpack.contents = parsed;
-        if (parsed.length > 0) {
-          p.grow();
-        } else {
-          p.shrink();
-        }
+        p.resize();
         callback(parsed);
       }
     });
@@ -626,3 +672,13 @@ Blockly.Backpack.prototype.setContents = function(backpack, store) {
   }
 };
 
+/**
+ * Resize the backpack icon based on whether the backpack has contents or not.
+ */
+Blockly.Backpack.prototype.resize = function() {
+  if (Blockly.Backpack.contents.length > 0) {
+    this.grow();
+  } else {
+    this.shrink();
+  }
+};

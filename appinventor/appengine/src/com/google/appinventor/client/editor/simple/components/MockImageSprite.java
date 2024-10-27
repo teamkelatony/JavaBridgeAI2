@@ -1,6 +1,6 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 // Copyright 2009-2011 Google, All Rights reserved
-// Copyright 2011-2012 MIT, All rights reserved
+// Copyright 2011-2019 MIT, All rights reserved
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,6 +15,8 @@ import com.google.appinventor.client.editor.youngandroid.properties.YoungAndroid
  *
  */
 public final class MockImageSprite extends MockImageBase implements MockSprite {
+  int x;
+  int y;
 
   /**
    * Component type name.
@@ -34,22 +36,19 @@ public final class MockImageSprite extends MockImageBase implements MockSprite {
   protected void addWidthHeightProperties() {
     // Percent based size will scale images strangely, so remove percent based sizes
     addProperty(PROPERTY_NAME_WIDTH, "" + LENGTH_PREFERRED, MESSAGES.widthPropertyCaption(),
+        "Appearance", MESSAGES.ImageSprite__WidthPropertyDescriptions(),
         new YoungAndroidLengthPropertyEditor(false));
     addProperty(PROPERTY_NAME_HEIGHT, "" + LENGTH_PREFERRED, MESSAGES.heightPropertyCaption(),
+        "Appearance", MESSAGES.ImageSprite__HeightPropertyDescriptions(),
         new YoungAndroidLengthPropertyEditor(false));
   }
 
-  // Support for Z layers
-
-  private void setZProperty(String text) {
-    MockCanvas mockCanvas = (MockCanvas) getContainer();
-    // mockCanvas will be null for the MockImageSprite on the palette
-    if (mockCanvas != null) {
-      mockCanvas.reorderComponents(this);
-    }
-  }
-  
   private void setXProperty(String text) {
+    try {
+      x = (int) Math.round(Double.parseDouble(text));
+    } catch (NumberFormatException e) {
+      // Don't change value if unparseable (should not happen).
+    }
     MockCanvas mockCanvas = (MockCanvas) getContainer();
     // mockCanvas will be null for the MockImageSprite on the palette
     if (mockCanvas != null) {
@@ -58,6 +57,19 @@ public final class MockImageSprite extends MockImageBase implements MockSprite {
   }
   
   private void setYProperty(String text) {
+    try {
+      y = (int) Math.round(Double.parseDouble(text));
+    } catch (NumberFormatException e) {
+      // Don't change value if unparseable (should not happen).
+    }
+    MockCanvas mockCanvas = (MockCanvas) getContainer();
+    // mockCanvas will be null for the MockImageSprite on the palette
+    if (mockCanvas != null) {
+      mockCanvas.reorderComponents(this);
+    }
+  }
+
+  private void setZProperty(String text) {
     MockCanvas mockCanvas = (MockCanvas) getContainer();
     // mockCanvas will be null for the MockImageSprite on the palette
     if (mockCanvas != null) {
@@ -75,5 +87,25 @@ public final class MockImageSprite extends MockImageBase implements MockSprite {
     } else if (propertyName.equals(PROPERTY_NAME_Y)) {
       setYProperty(newValue);
     } 
+  }
+
+  @Override
+  public int getLeftX() {
+    return x;
+  }
+
+  @Override
+  public int getTopY() {
+    return y;
+  }
+
+  @Override
+  public int getXOffset() {
+    return 0;
+  }
+
+  @Override
+  public int getYOffset() {
+    return 0;
   }
 }

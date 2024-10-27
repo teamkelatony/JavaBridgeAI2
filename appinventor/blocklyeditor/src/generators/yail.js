@@ -1,5 +1,5 @@
 // -*- mode: java; c-basic-offset: 2; -*-
-// Copyright 2012-2017 Massachusetts Institute of Technology. All rights reserved.
+// Copyright 2012-2019 Massachusetts Institute of Technology. All rights reserved.
 
 /**
  * @fileoverview Helper functions for generating Yail for blocks.
@@ -32,11 +32,19 @@ Blockly.Yail.RESERVED_WORDS_ = '';
 Blockly.Yail.ORDER_ATOMIC = 0;         // 0 "" ...
 Blockly.Yail.ORDER_NONE = 99;          // (...)
 
+Blockly.Yail.YAIL_ACTIVE_FORM = "(SimpleForm:getActiveForm)";
 Blockly.Yail.YAIL_ADD_COMPONENT = "(add-component ";
 Blockly.Yail.YAIL_ADD_TO_LIST = "(add-to-list ";
 Blockly.Yail.YAIL_BEGIN = "(begin ";
+// This "break" symbol must match the one that is used in the
+// foreach macro, forrange and while macros
+Blockly.Yail.YAIL_BREAK = "*yail-break*";
 Blockly.Yail.YAIL_CALL_COMPONENT_METHOD = "(call-component-method ";
+Blockly.Yail.YAIL_CALL_COMPONENT_METHOD_BLOCKING = "(call-component-method-with-blocking-continuation ";
+Blockly.Yail.YAIL_CALL_COMPONENT_METHOD_CONTINUATION = "(call-component-method-with-continuation ";
 Blockly.Yail.YAIL_CALL_COMPONENT_TYPE_METHOD = "(call-component-type-method ";
+Blockly.Yail.YAIL_CALL_COMPONENT_TYPE_METHOD_BLOCKING = "(call-component-type-method-with-blocking-continuation ";
+Blockly.Yail.YAIL_CALL_COMPONENT_TYPE_METHOD_CONTINUATION = "(call-component-type-method-with-continuation ";
 Blockly.Yail.YAIL_CALL_YAIL_PRIMITIVE = "(call-yail-primitive ";
 Blockly.Yail.YAIL_CLEAR_FORM = "(clear-current-form)";
 // The lines below are complicated because we want to support versions of the
@@ -48,15 +56,19 @@ Blockly.Yail.YAIL_CLOSE_BLOCK = ")\n";
 Blockly.Yail.YAIL_COMMENT_MAJOR = ";;; ";
 Blockly.Yail.YAIL_COMPONENT_REMOVE = "(remove-component ";
 Blockly.Yail.YAIL_COMPONENT_TYPE = "component";
+Blockly.Yail.YAIL_CONSTANT_ALL = '(static-field com.google.appinventor.components.runtime.util.YailDictionary \'ALL)';
 Blockly.Yail.YAIL_DEFINE = "(def ";
 Blockly.Yail.YAIL_DEFINE_EVENT = "(define-event ";
+Blockly.Yail.YAIL_DEFINE_GENERIC_EVENT = '(define-generic-event ';
 Blockly.Yail.YAIL_DEFINE_FORM = "(define-form ";
 Blockly.Yail.YAIL_DO_AFTER_FORM_CREATION = "(do-after-form-creation ";
 Blockly.Yail.YAIL_DOUBLE_QUOTE = "\"";
 Blockly.Yail.YAIL_FALSE = "#f";
+Blockly.Yail.YAIL_FILTER = "(filter_nondest ";
 Blockly.Yail.YAIL_FOREACH = "(foreach ";
 Blockly.Yail.YAIL_FORRANGE = "(forrange ";
 Blockly.Yail.YAIL_GET_COMPONENT = "(get-component ";
+Blockly.Yail.YAIL_GET_ALL_COMPONENT = "(get-all-components ";
 Blockly.Yail.YAIL_GET_PROPERTY = "(get-property ";
 Blockly.Yail.YAIL_GET_COMPONENT_TYPE_PROPERTY = "(get-property-and-check  ";
 Blockly.Yail.YAIL_GET_VARIABLE = "(get-var ";
@@ -69,11 +81,15 @@ Blockly.Yail.YAIL_LET = "(let ";
 Blockly.Yail.YAIL_LEXICAL_VALUE = "(lexical-value ";
 Blockly.Yail.YAIL_SET_LEXICAL_VALUE = "(set-lexical! ";
 Blockly.Yail.YAIL_LINE_FEED = "\n";
+Blockly.Yail.YAIL_MAP = "(map_nondest ";
 Blockly.Yail.YAIL_NULL = "(get-var *the-null-value*)";
 Blockly.Yail.YAIL_EMPTY_LIST = "'()";
+Blockly.Yail.YAIL_EMPTY_YAIL_LIST = "'(*list*)";
+Blockly.Yail.YAIL_EMPTY_DICT = "(make com.google.appinventor.components.runtime.util.YailDictionary)";
 Blockly.Yail.YAIL_OPEN_BLOCK = "(";
 Blockly.Yail.YAIL_OPEN_COMBINATION = "(";
 Blockly.Yail.YAIL_QUOTE = "'";
+Blockly.Yail.YAIL_REDUCE = "(reduceovereach ";
 Blockly.Yail.YAIL_RENAME_COMPONENT = "(rename-component ";
 Blockly.Yail.YAIL_SET_AND_COERCE_PROPERTY = "(set-and-coerce-property! ";
 Blockly.Yail.YAIL_SET_AND_COERCE_COMPONENT_TYPE_PROPERTY = "(set-and-coerce-property-and-check! ";
@@ -81,7 +97,11 @@ Blockly.Yail.YAIL_SET_SUBFORM_LAYOUT_PROPERTY = "(%set-subform-layout-property! 
 Blockly.Yail.YAIL_SET_VARIABLE = "(set-var! ";
 Blockly.Yail.YAIL_SET_THIS_FORM = "(set-this-form)\n ";
 Blockly.Yail.YAIL_SPACER = " ";
+Blockly.Yail.YAIL_SORT_COMPARATOR_NONDEST = "(sortcomparator_nondest ";
+Blockly.Yail.YAIL_SORT_KEY_NONDEST = "(sortkey_nondest ";
 Blockly.Yail.YAIL_TRUE = "#t";
+Blockly.Yail.YAIL_UNREGISTER =
+  "com.google.appinventor.components.runtime.EventDispatcher:unregisterEventForDelegation";
 Blockly.Yail.YAIL_WHILE = "(while ";
 Blockly.Yail.YAIL_LIST_CONSTRUCTOR = "*list-for-runtime*";
 
@@ -104,6 +124,18 @@ Blockly.Yail.FLONUM_REGEXP = "^[\\s]*[-+]?([0-9]*)((\\.[0-9]+)|[0-9]\\.)[\\s]*$"
  * @returns {String} the generated code if there were no errors.
  */
 Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
+  var oldForRepl = this.forRepl;
+  var code;
+  try {
+    this.forRepl = forRepl;
+    code = Blockly.Yail.getFormYail_(formJson, packageName, forRepl, workspace);
+  } finally {
+    this.forRepl = oldForRepl;
+  }
+  return code;
+};
+
+Blockly.Yail.getFormYail_ = function(formJson, packageName, forRepl, workspace) {
   var jsonObject = JSON.parse(formJson);
   // TODO: check for JSON parse error
   var componentNames = [];
@@ -121,15 +153,11 @@ Blockly.Yail.getFormYail = function(formJson, packageName, forRepl, workspace) {
   }
 
   if (!forRepl) {
-    code.push(Blockly.Yail.getYailPrelude(packageName, formName));
+    code.push(Blockly.Yail.getYailPrelude(packageName, formName,
+      !jsonObject.Properties['Theme'] || jsonObject.Properties['Theme'] === 'Classic'));
   }
 
   var componentMap = workspace.buildComponentMap([], [], false, false);
-
-  for (var comp in componentMap.components)
-    if (componentMap.components.hasOwnProperty(comp))
-      componentNames.push(comp);
-
   var globalBlocks = componentMap.globals;
   for (var i = 0, block; block = globalBlocks[i]; i++) {
     code.push(Blockly.Yail.blockToCode(block));
@@ -187,13 +215,15 @@ Blockly.Yail.getDeepNames = function(componentJson, componentNames) {
  * @param {String} formName  (e.g., "Screen1")
  * @returns {String} Yail code
  * @private
- */
-Blockly.Yail.getYailPrelude = function(packageName, formName) {
+*/
+Blockly.Yail.getYailPrelude = function(packageName, formName, classicTheme) {
  return "#|\n$Source $Yail\n|#\n\n"
      + Blockly.Yail.YAIL_DEFINE_FORM
      + packageName
      + Blockly.Yail.YAIL_SPACER
      + formName
+     + Blockly.Yail.YAIL_SPACER
+     + (classicTheme ? "#t" : "#f")
      + Blockly.Yail.YAIL_CLOSE_BLOCK
      + "(require <com.google.youngandroid.runtime>)\n";
 };
@@ -354,7 +384,7 @@ Blockly.Yail.getFormPropertiesLines = function(formName, componentJson, includeC
     // (hopefully) will be uncovered in testing. Please
     // be alert for these errors and check carefully.
     code.push(Blockly.Yail.YAIL_DO_AFTER_FORM_CREATION + yailForComponentProperties.join(" ") +
-        Blockly.Yail.YAIL_CLOSE_BLOCK);
+      Blockly.Yail.YAIL_CLOSE_BLOCK);
   }
   return code;
 };
@@ -377,12 +407,34 @@ Blockly.Yail.getFormPropertiesLines = function(formName, componentJson, includeC
  */
 Blockly.Yail.getPropertySettersLines = function(componentJson, componentName, componentDb) {
   var code = [];
-  for (var prop in componentJson) {
-    if (prop.charAt(0) != "$" && prop != "Uuid" && prop != "TutorialURL") {
-      code.push(Blockly.Yail.getPropertySetterString(componentName, componentJson.$Type, prop,
-        componentJson[prop], componentDb));
+  var type = componentDb.getType(componentJson['$Type']);
+  function shouldSendProperty(prop, info) {
+    return (prop.charAt(0) !== '$' && prop !== 'Uuid' &&
+      prop !== 'TutorialURL' && prop !== 'BlocksToolkit') ||
+      (info && info['alwaysSend']);
+  }
+  // Gather all of the properties together
+  var propsToSend = Object.keys(componentJson);
+  for (var prop in type['properties']) {
+    var property = type['properties'][prop];
+    if (property['alwaysSend'] && !(prop in componentJson)) {
+      propsToSend.push(property['name']);
     }
   }
+  // Keep ordering so default properties will still be sent in the right position.
+  propsToSend.sort();
+  // Construct the code
+  propsToSend.forEach(function(prop) {
+    var info = type['properties'][prop];
+    if (shouldSendProperty(prop, info)) {
+      var value = componentJson[prop];
+      if (!Boolean(value) && value !== '') {
+        value = info['defaultValue'];
+      }
+      code.push(Blockly.Yail.getPropertySetterString(componentName, componentJson['$Type'], prop,
+        value, componentDb));
+    }
+  });
   return code;
 };
 
@@ -399,14 +451,53 @@ Blockly.Yail.getPropertySettersLines = function(componentJson, componentName, co
  */
 Blockly.Yail.getPropertySetterString = function(componentName, componentType, propertyName,
     propertyValue, componentDb) {
-  var code = Blockly.Yail.YAIL_SET_AND_COERCE_PROPERTY + Blockly.Yail.YAIL_QUOTE + 
-    componentName + Blockly.Yail.YAIL_SPACER + Blockly.Yail.YAIL_QUOTE + propertyName + 
+  var code = Blockly.Yail.YAIL_SET_AND_COERCE_PROPERTY + Blockly.Yail.YAIL_QUOTE +
+    componentName + Blockly.Yail.YAIL_SPACER + Blockly.Yail.YAIL_QUOTE + propertyName +
     Blockly.Yail.YAIL_SPACER;
-  var propType = Blockly.Yail.YAIL_QUOTE +
-    componentDb.getPropertyForType(componentType, propertyName).type;
-  var value = Blockly.Yail.getPropertyValueString(propertyValue, propType);
+  var propDef = componentDb.getPropertyForType(componentType, propertyName);
+  // If a designer property does not have a corresponding block property, then propDef will be
+  // undefined. In this case, we assume "any" as the type. A corresponding fix is included in
+  // ComponentProcessor to enforce that newer components/extensions always have both a designer
+  // and block definition.
+  var propType = Blockly.Yail.YAIL_QUOTE + (propDef ? propDef.type : "any");
+  var value;
+  if (propertyName === 'ApiKey') {
+    value = Blockly.Yail.obfuscateProperty(propertyValue);
+  } else {
+    value = Blockly.Yail.getPropertyValueString(propertyValue, propType);
+  }
   code = code.concat(value + Blockly.Yail.YAIL_SPACER + propType + Blockly.Yail.YAIL_CLOSE_BLOCK);
   return code;
+};
+
+/**
+ * Obfuscate a designer property's value.
+ *
+ * @param text the original text to be obfuscated
+ * @returns {string} the deobfuscation code following the same logic as the obfuscated_text block
+ */
+Blockly.Yail.obfuscateProperty = function(text) {
+  var confounder = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 8);
+  var setupObfuscation = function(input, confounder) {
+    // The algorithm below is also implemented in scheme in runtime.scm
+    // If you change it here, you have to change it there!
+    // Note: This algorithm is like xor, if applied to its output
+    // it regenerates it input.
+    var acc = [];
+    // First make sure the confounder is long enough...
+    while (confounder.length < input.length) {
+      confounder += confounder;
+    }
+    for (var i = 0; i < input.length; i++) {
+      var c = (input.charCodeAt(i) ^ confounder.charCodeAt(i)) & 0xFF;
+      var b = (c ^ input.length - i) & 0xFF;
+      var b2 = ((c >> 8) ^ i) & 0xFF;
+      acc.push(String.fromCharCode((b2 << 8 | b) & 0xFF));
+    }
+    return acc.join('');
+  }
+  var encoded = setupObfuscation(text, confounder);
+  return '(text-deobfuscate ' + [encoded, confounder].map(Blockly.Yail.quote_).join(' ') + ')';
 };
 
 /**
@@ -422,11 +513,11 @@ Blockly.Yail.getPropertySetterString = function(componentName, componentType, pr
 Blockly.Yail.getPropertyValueString = function(propertyValue, propertyType) {
   if (propertyType == "'number") {
     if (propertyValue.match(Blockly.Yail.INTEGER_REGEXP)
-        || propertyValue.match(Blockly.Yail.FLONUM_REGEXP)) { // integer
+            || propertyValue.match(Blockly.Yail.FLONUM_REGEXP)) { // integer
       return propertyValue;
     } else if (propertyValue.match(Blockly.Yail.SIMPLE_HEX_PREFIX + "[0-9A-F]+")) { // hex
       return Blockly.Yail.YAIL_HEX_PREFIX +
-          propertyValue.substring(Blockly.Yail.SIMPLE_HEX_PREFIX.length);
+        propertyValue.substring(Blockly.Yail.SIMPLE_HEX_PREFIX.length);
     }
   } else if (propertyType == "'boolean") {
     if (-1 != propertyValue.indexOf("False")) {
@@ -633,4 +724,19 @@ Blockly.Yail.blockToCode1 = function(block) {
     }
     return this.scrub_(block, code, true);
   }
+};
+
+/**
+ * Generates YAIL that will unregister an event if the corresponding block is disabled in the
+ * workspace.
+ *
+ * @param {!Blockly.BlockSvg} block
+ * @returns {string}
+ */
+Blockly.Yail.disabledEventBlockToCode = function(block) {
+  return Blockly.Yail.YAIL_OPEN_BLOCK + Blockly.Yail.YAIL_UNREGISTER + Blockly.Yail.YAIL_SPACER +
+    Blockly.Yail.YAIL_ACTIVE_FORM + Blockly.Yail.YAIL_SPACER +
+    Blockly.Yail.YAIL_QUOTE + block.getFieldValue('COMPONENT_SELECTOR') +
+    Blockly.Yail.YAIL_SPACER + Blockly.Yail.YAIL_QUOTE + block.eventName +
+    Blockly.Yail.YAIL_CLOSE_BLOCK;
 };

@@ -8,7 +8,7 @@ package com.google.appinventor.client.explorer.commands;
 
 import static com.google.appinventor.client.Ode.MESSAGES;
 
-import com.google.appinventor.client.DesignToolbar;
+import com.google.appinventor.client.editor.youngandroid.DesignToolbar;
 import com.google.appinventor.client.Ode;
 import com.google.appinventor.client.OdeAsyncCallback;
 import com.google.appinventor.client.editor.FileEditor;
@@ -181,6 +181,12 @@ public final class AddFormCommand extends ChainableCommand {
       // Check that it meets the formatting requirements.
       if (!TextValidators.isValidIdentifier(newFormName)) {
         Window.alert(MESSAGES.malformedFormNameError());
+        return false;
+      }
+
+      // Check for reserved words
+      if(TextValidators.isReservedName(newFormName)) {
+        Window.alert(MESSAGES.reservedNameError());
         return false;
       }
 

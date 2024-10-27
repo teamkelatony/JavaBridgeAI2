@@ -233,8 +233,8 @@ public class AARLibrary {
       zip = new ZipFile(aarPath);
       packageName = extractPackageName(zip);
       basedir = new File(path, packageName);
-      if (!basedir.mkdirs()) {
-        throw new IOException("Unable to create directory for AAR package");
+      if (!basedir.exists() && !basedir.mkdirs()) {
+        throw new IOException("Unable to create directory for AAR package: " + basedir);
       }
       InputStream input = null;
       OutputStream output = null;
@@ -246,6 +246,12 @@ public class AARLibrary {
           throw new IOException("Unable to create directory " + path.getAbsolutePath());
         } else if (!entry.isDirectory()) {
           try {
+            // Need to make sure the parent directory is present. Files can appear
+            // in a ZIP (AAR) file without an explicit directory object
+            File parentDir = target.getParentFile();
+            if (!parentDir.exists()) {
+              parentDir.mkdirs();
+            }
             output = new FileOutputStream(target);
             input = zip.getInputStream(entry);
             IOUtils.copy(input, output);

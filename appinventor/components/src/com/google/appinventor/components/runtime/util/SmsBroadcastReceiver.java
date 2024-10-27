@@ -1,5 +1,5 @@
 // -*- mode: java; c-basic-offset: 2; -*-
-// Copyright 2011-2012 MIT, All rights reserved
+// Copyright 2011-2020 MIT, All rights reserved
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -8,15 +8,9 @@
  * and was original published under Apache 2.0 license.
  *
  */
+
 package com.google.appinventor.components.runtime.util;
 
-import java.util.List;
-
-import com.google.appinventor.components.common.ComponentConstants;
-import com.google.appinventor.components.runtime.Texting;
-import com.google.appinventor.components.runtime.ReplForm;
-
-import android.R;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -26,6 +20,11 @@ import android.content.Intent;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsMessage;
 import android.util.Log;
+import androidx.core.app.NotificationCompat;
+import com.google.appinventor.components.common.ComponentConstants;
+import com.google.appinventor.components.runtime.ReplForm;
+import com.google.appinventor.components.runtime.Texting;
+import java.util.List;
 
 /**
  * This broadcast receiver accepts incoming SMS messages from either
@@ -169,19 +168,23 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
       } else if (SdkLevel.getLevel() >= SdkLevel.LEVEL_KITKAT) {
         // On KitKat or higher, use the convience getMessageFromIntent method.
+        StringBuilder sb = new StringBuilder();
         List<SmsMessage> messages = KitkatUtil.getMessagesFromIntent(intent);
         for (SmsMessage smsMsg : messages) {
           if (smsMsg != null) {
-            msg = smsMsg.getMessageBody();
+            sb.append(smsMsg.getMessageBody());
           }
         }
+        msg = sb.toString();
       } else {
         // On SDK older than KitKat, we have to manually process the PDUs.
+        StringBuilder sb = new StringBuilder();
         Object[] pdus = (Object[]) intent.getExtras().get("pdus");
         for (Object pdu : pdus) {
           SmsMessage smsMsg = SmsMessage.createFromPdu((byte[]) pdu);
-          msg = smsMsg.getMessageBody();
+          sb.append(smsMsg.getMessageBody());
         }
+        msg = sb.toString();
       }
     } catch(NullPointerException e) {
       // getMessageBody() can throw a NPE if its wrapped message is null, but there isn't an
@@ -219,14 +222,21 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
       newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
       // Create the Notification
+      PendingIntent activity = PendingIntent.getActivity(context, 0, newIntent,
+          PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
       NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-      Notification note = new Notification(R.drawable.sym_call_incoming, phone + " : " + msg , System.currentTimeMillis());
-      note.flags |= Notification.FLAG_AUTO_CANCEL;
-      note.defaults |= Notification.DEFAULT_SOUND;
+      Notification note = new NotificationCompat.Builder(context)
+          .setSmallIcon(android.R.drawable.sym_call_incoming)
+          .setTicker(phone + " : " + msg)
+          .setWhen(System.currentTimeMillis())
+          .setAutoCancel(true)
+          .setDefaults(Notification.DEFAULT_SOUND)
+          .setContentTitle("Sms from " + phone)
+          .setContentText(msg)
+          .setContentIntent(activity)
+          .setNumber(Texting.getCachedMsgCount())
+          .build();
 
-      PendingIntent activity = PendingIntent.getActivity(context, 0, newIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-      note.setLatestEventInfo(context, "Sms from " + phone, msg, activity);
-      note.number = Texting.getCachedMsgCount();
       nm.notify(null, NOTIFICATION_ID, note);
       Log.i(TAG, "Notification sent, classname: " + classname);
 

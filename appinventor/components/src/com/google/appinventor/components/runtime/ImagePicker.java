@@ -1,41 +1,51 @@
 // -*- Mode: java; c-basic-offset: 2; -*-
 // Copyright 2009-2011 Google, All Rights reserved
-// Copyright 2011-2012 MIT, All rights reserved
+// Copyright 2011-2021 MIT, All rights reserved
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
 package com.google.appinventor.components.runtime;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Comparator;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 import android.app.Activity;
+
 import android.content.ContentResolver;
 import android.content.Intent;
+
 import android.net.Uri;
-import android.os.Environment;
+
 import android.provider.MediaStore;
+
 import android.util.Log;
+
 import android.webkit.MimeTypeMap;
 
 import com.google.appinventor.components.annotations.DesignerComponent;
 import com.google.appinventor.components.annotations.PropertyCategory;
 import com.google.appinventor.components.annotations.SimpleObject;
 import com.google.appinventor.components.annotations.SimpleProperty;
-import com.google.appinventor.components.annotations.UsesPermissions;
+
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.YaVersion;
+
 import com.google.appinventor.components.runtime.util.ErrorMessages;
+import com.google.appinventor.components.runtime.util.FileUtil;
 import com.google.appinventor.components.runtime.util.MediaUtil;
+import com.google.appinventor.components.runtime.util.QUtil;
+
+import java.io.File;
+import java.io.IOException;
+
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
- * Component enabling a user to select an image from the phone's gallery.
+ * A special-purpose button. When the user taps an `ImagePicker`, the device's image gallery
+ * appears, and the user can choose an image. After an image is picked, it is saved, and the
+ * {@link #Selection()} property will be the name of the file where the image is stored. In order
+ * to not fill up storage, a maximum of 10 images will be stored. Picking more images will delete
+ * previous images, in order from oldest to newest.
  *
  * @author halabelson@google.com (Hal Abelson)
  */
@@ -47,8 +57,6 @@ import com.google.appinventor.components.runtime.util.MediaUtil;
           "fill up storage, a maximum of 10 images will be stored.  Picking more images " +
           "will delete previous images, in order from oldest to newest.",
     category = ComponentCategory.MEDIA)
-
-@UsesPermissions(permissionNames = "android.permission.WRITE_EXTERNAL_STORAGE")
 @SimpleObject
 public class ImagePicker extends Picker implements ActivityResultListener {
 
@@ -61,13 +69,16 @@ public class ImagePicker extends Picker implements ActivityResultListener {
   private static final String FILE_PREFIX = "picked_image";
 
  // max number of files to save in image directory
-  private static int maxSavedFiles = 10;
+  private static final int maxSavedFiles = 10;
 
   // The media path (URI) for the selected image file created by MediaUtil
   private String selectionURI;
 
   // The path to the saved image
   private String selectionSavedImage = "";
+
+  // Flag to indicate whether we have permission to write imgaes to external storage
+  private boolean havePermission = false;
 
   /**
    * Create a new ImagePicker component.
@@ -90,6 +101,27 @@ public class ImagePicker extends Picker implements ActivityResultListener {
   @Override
   protected Intent getIntent() {
     return new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+  }
+
+  @Override
+  public void click() {
+    if (!havePermission && FileUtil.needsWritePermission(container.$form().DefaultFileScope())) {
+      container.$form().askPermission(WRITE_EXTERNAL_STORAGE,
+          new PermissionResultHandler() {
+            @Override
+            public void HandlePermissionResponse(String permission, boolean granted) {
+              if (granted) {
+                havePermission = true;
+                click();
+              } else {
+                container.$form().dispatchPermissionDeniedEvent(ImagePicker.this, "Click",
+                    permission);
+              }
+            }
+          });
+      return;
+    }
+    super.click();
   }
 
   /**
@@ -146,10 +178,8 @@ public class ImagePicker extends Picker implements ActivityResultListener {
   private void copyToExternalStorageAndDeleteSource(File source, String extension) {
 
     File dest = null;
-    InputStream inStream = null;
-    OutputStream outStream = null;
 
-    String fullDirname = Environment.getExternalStorageDirectory() + imagePickerDirectoryName;
+    String fullDirname = QUtil.getExternalStoragePath(container.$form()) + imagePickerDirectoryName;
     File destDirectory = new File(fullDirname);
 
     try {
@@ -161,19 +191,8 @@ public class ImagePicker extends Picker implements ActivityResultListener {
       // dest.deleteOnExit();
       Log.i(LOG_TAG, "saved file path is: " + selectionSavedImage);
 
-      inStream = new FileInputStream(source);
-      outStream = new FileOutputStream(dest);
+      FileUtil.copyFile(source.getAbsolutePath(), dest.getAbsolutePath());
 
-      byte[] buffer = new byte[1024];
-
-      int length;
-      // copy the file content in bytes
-      while ((length = inStream.read(buffer)) > 0){
-        outStream.write(buffer, 0, length);
-      }
-
-      inStream.close();
-      outStream.close();
       Log.i(LOG_TAG, "Image was copied to " + selectionSavedImage);
       // this can be uncommented to show the alert, but the alert
       // is pretty annoying

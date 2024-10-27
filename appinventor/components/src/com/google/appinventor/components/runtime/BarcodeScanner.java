@@ -1,10 +1,18 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 // Copyright 2009-2011 Google, All Rights reserved
-// Copyright 2011-2012 MIT, All rights reserved
+// Copyright 2011-2021 MIT, All rights reserved
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
 package com.google.appinventor.components.runtime;
+
+import android.Manifest;
+
+import android.app.Activity;
+
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.Intent;
 
 import com.google.appinventor.components.annotations.DesignerComponent;
 import com.google.appinventor.components.annotations.DesignerProperty;
@@ -13,23 +21,24 @@ import com.google.appinventor.components.annotations.SimpleEvent;
 import com.google.appinventor.components.annotations.SimpleFunction;
 import com.google.appinventor.components.annotations.SimpleObject;
 import com.google.appinventor.components.annotations.SimpleProperty;
+import com.google.appinventor.components.annotations.UsesActivities;
 import com.google.appinventor.components.annotations.UsesLibraries;
 import com.google.appinventor.components.annotations.UsesPermissions;
-import com.google.appinventor.components.annotations.UsesActivities;
+import com.google.appinventor.components.annotations.UsesQueries;
+
+import com.google.appinventor.components.annotations.androidmanifest.ActionElement;
 import com.google.appinventor.components.annotations.androidmanifest.ActivityElement;
+import com.google.appinventor.components.annotations.androidmanifest.IntentFilterElement;
+
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.common.YaVersion;
+
 import com.google.appinventor.components.runtime.util.ErrorMessages;
 import com.google.appinventor.components.runtime.util.SdkLevel;
 
-import android.app.Activity;
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
-import android.content.ComponentName;
-
 /**
- * Component for scanning a barcode and getting back the resulting string.
+ * Component for scanning a QR code and getting back the resulting string.
  *
  * @author sharon@google.com (Sharon Perl)
  */
@@ -48,7 +57,12 @@ import android.content.ComponentName;
                      windowSoftInputMode = "stateAlwaysHidden")
 })
 @UsesPermissions(permissionNames = "android.permission.CAMERA")
-@UsesLibraries(libraries = "Barcode.jar,core.jar")
+@UsesLibraries(libraries = "Barcode.jar,QRGenerator.jar")
+@UsesQueries(intents = {
+    @IntentFilterElement(
+        actionElements = {@ActionElement(name = "com.google.zxing.client.android.SCAN")}
+    )
+})
 public class BarcodeScanner extends AndroidNonvisibleComponent
     implements ActivityResultListener, Component {
 
@@ -58,7 +72,7 @@ public class BarcodeScanner extends AndroidNonvisibleComponent
   private String result = "";
   private boolean useExternalScanner = true;
   private final ComponentContainer container;
-
+  private boolean havePermission = false; // Do we have CAMERA permission?
 
   /* Used to identify the call to startActivityForResult. Will be passed back into the
   resultReturned() callback method. */
@@ -75,7 +89,7 @@ public class BarcodeScanner extends AndroidNonvisibleComponent
   }
 
   /**
-   * Result property getter method.
+   * Gets the text result of the previous scan.
    */
   @SimpleProperty(description = "Text result of the previous scan.",
       category = PropertyCategory.BEHAVIOR)
@@ -92,6 +106,24 @@ public class BarcodeScanner extends AndroidNonvisibleComponent
   public void DoScan() {
     Intent intent = new Intent(SCAN_INTENT);
     if (!useExternalScanner && (SdkLevel.getLevel() >= SdkLevel.LEVEL_ECLAIR)) {  // Should we attempt to use an internal scanner?
+      // Make sure we have CAMERA permission
+      if (!havePermission) {
+        container.$form()
+          .askPermission(Manifest.permission.CAMERA,
+                         new PermissionResultHandler() {
+                           @Override
+                           public void HandlePermissionResponse(String permission, boolean granted) {
+                             if (granted) {
+                               BarcodeScanner.this.havePermission = true;
+                               DoScan();
+                             } else {
+                               form.dispatchPermissionDeniedEvent(BarcodeScanner.this, "DoScan",
+                                   Manifest.permission.CAMERA);
+                             }
+                           }
+                         });
+        return;
+      }
       String packageName = container.$form().getPackageName();
       intent.setComponent(new ComponentName(packageName, "com.google.zxing.client.android.AppInvCaptureActivity"));
     }
@@ -119,7 +151,6 @@ public class BarcodeScanner extends AndroidNonvisibleComponent
     }
   }
 
-
   /**
    * Indicates that the scanner has read a (text) result and provides the result 
    */
@@ -146,7 +177,7 @@ public class BarcodeScanner extends AndroidNonvisibleComponent
   /**
    * Set whether or not you wish to use an External Scanning program such as
    * Bar Code Scanner. If false a version of ZXing integrated into App Inventor
-   * Will be used.
+   * will be used.
    *
    * @param useExternalScanner  Set true to use an external scanning program,
    *                            false to use internal copy of ZXing.

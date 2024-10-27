@@ -1,33 +1,45 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 // Copyright 2009-2011 Google, All Rights reserved
-// Copyright 2011-2012 MIT, All rights reserved
+// Copyright 2011-2021 MIT, All rights reserved
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
 package com.google.appinventor.components.runtime;
+
+import static android.Manifest.permission.CAMERA;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+
+import android.app.Activity;
+
+import android.content.Intent;
+
+import android.net.Uri;
+
+import android.os.Environment;
+
+import android.util.Log;
 
 import com.google.appinventor.components.annotations.DesignerComponent;
 import com.google.appinventor.components.annotations.SimpleEvent;
 import com.google.appinventor.components.annotations.SimpleFunction;
 import com.google.appinventor.components.annotations.SimpleObject;
 import com.google.appinventor.components.annotations.UsesPermissions;
+
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.YaVersion;
-import com.google.appinventor.components.runtime.util.ErrorMessages;
 
-import android.app.Activity;
-import android.content.ContentValues;
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.util.Log;
+import com.google.appinventor.components.runtime.util.ErrorMessages;
+import com.google.appinventor.components.runtime.util.FileUtil;
 
 import java.io.File;
-import java.util.Date;
 
 /**
- * Camcorder provides access to the phone's camcorder
+ * ![Camcorder icon](images/camcorder.png)
+ *
+ * A component to record a video using the device's camcorder. After the video is recorded, the
+ * name of the file on the phone containing the clip is available as an argument to the
+ * {@link #AfterRecording(String)} event. The file name can be used, for example, to set the source
+ * property of a {@link VideoPlayer} component.
  */
 
 @DesignerComponent(version = YaVersion.CAMCORDER_COMPONENT_VERSION,
@@ -40,7 +52,7 @@ import java.util.Date;
   nonVisible = true,
   iconName = "images/camcorder.png")
 @SimpleObject
-@UsesPermissions(permissionNames = "android.permission.WRITE_EXTERNAL_STORAGE, android.permission.READ_EXTERNAL_STORAGE")
+@UsesPermissions({CAMERA})
 public class Camcorder extends AndroidNonvisibleComponent
   implements ActivityResultListener, Component {
 
@@ -50,6 +62,9 @@ public class Camcorder extends AndroidNonvisibleComponent
   /* Used to identify the call to startActivityForResult. Will be passed back
      into the resultReturned() callback method. */
   private int requestCode;
+
+  // Have camera permission
+  private boolean havePermission = false;
 
   /**
    * Creates a Camcorder component.
@@ -62,11 +77,43 @@ public class Camcorder extends AndroidNonvisibleComponent
   }
 
   /**
-   * Records a video, then raises the AfterRecoding event.
+   * Determine whether we have the right permissions during initialization.
+   */
+  public void Initialize() {
+    havePermission = !form.isDeniedPermission(CAMERA);
+    if (FileUtil.needsWritePermission(form.DefaultFileScope())) {
+      havePermission &= !form.isDeniedPermission(WRITE_EXTERNAL_STORAGE);
+    }
+  }
+
+  /**
+   * Records a video, then raises the {@link #AfterRecording(String)} event.
    */
   @SimpleFunction
   public void RecordVideo() {
     String state = Environment.getExternalStorageState();
+    if (!havePermission) {
+      final Camcorder me = this;
+      form.runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            form.askPermission(CAMERA,
+                               new PermissionResultHandler() {
+                                 @Override
+                                 public void HandlePermissionResponse(String permission, boolean granted) {
+                                   if (granted) {
+                                     me.havePermission = true;
+                                     me.RecordVideo();
+                                   } else {
+                                     form.dispatchPermissionDeniedEvent(me, "RecordVideo",
+                                         CAMERA);
+                                   }
+                                 }
+                               });
+          }
+        });
+      return;
+    }
 
     if (Environment.MEDIA_MOUNTED.equals(state)) {
       Log.i("CamcorderComponent", "External storage is available and writable");
@@ -124,7 +171,7 @@ public class Camcorder extends AndroidNonvisibleComponent
 
   /**
    * Indicates that a video was recorded with the camera and provides the path to
-   * the stored picture.
+   * the stored video.
    */
   @SimpleEvent
   public void AfterRecording(String clip) {

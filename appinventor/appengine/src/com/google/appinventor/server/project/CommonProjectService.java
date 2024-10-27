@@ -14,6 +14,7 @@ import com.google.appinventor.shared.rpc.project.ChecksumedFileException;
 import com.google.appinventor.shared.rpc.project.NewProjectParameters;
 import com.google.appinventor.shared.rpc.project.ProjectRootNode;
 import com.google.appinventor.shared.rpc.project.TextFile;
+import com.google.appinventor.shared.rpc.project.UserProject;
 import com.google.appinventor.shared.rpc.user.User;
 import com.google.appinventor.shared.storage.StorageUtil;
 import com.google.appinventor.shared.util.Base64Util;
@@ -82,14 +83,31 @@ public abstract class CommonProjectService {
   }
 
   /**
-   * Sets the project's gallery id.
+   * Renames several projects.
    *
    * @param userId the user id
-   * @param projectId  project ID as received by
+   * @param projectIds IDs of projects to be renamed
+   * @param projectNames new project names
    */
-  public void setGalleryId(String userId, long projectId, long galleryId) {
-    storageIo.setProjectGalleryId(userId, projectId, galleryId);
-  }
+  public abstract void renameProjects(String userId, List<Long> projectIds, List<String> projectNames);
+
+  /**
+   * Send a project to the new Gallery
+   *
+   * @param userId the user id
+   * @param projectId the project ID to send
+   */
+  public abstract RpcResult sendToGallery(String userId, long projectId);
+
+  /**
+   * loadFromGallery -- Load a project from the gallery
+   *
+   * @param userId the userId to load the project into
+   * @param galleryId the unique gallery ID for this project
+   */
+
+  public abstract UserProject loadFromGallery(String userId, String galleryId) throws IOException;
+
   /**
    * Returns the project root node for the requested project.
    *
@@ -322,10 +340,11 @@ public abstract class CommonProjectService {
    * @param projectId  project id to be built
    * @param nonce -- random string used to find finished APK
    * @param target  build target (optional, implementation dependent)
+   * @param secondBuildserver use second buildserver
    *
    * @return  build results
    */
-  public abstract RpcResult build(User user, long projectId, String nonce, String target);
+  public abstract RpcResult build(User user, long projectId, String nonce, String target, boolean secondBuildserver, boolean isAab);
 
   /**
    * Gets the result of a build command for the project.
