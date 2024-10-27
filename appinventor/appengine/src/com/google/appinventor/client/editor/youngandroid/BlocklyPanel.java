@@ -271,7 +271,7 @@ public class BlocklyPanel extends HTMLPanel {
         try {
             return doGetJava(formName, formJson, packageName);
         } catch (JavaScriptException e) {
-            OdeLog.log("Javascript generation exception");
+            LOG.warning("Javascript generation exception");
             throw new YailGenerationException(e.getDescription(), formName);
         }
     }
@@ -864,6 +864,10 @@ public class BlocklyPanel extends HTMLPanel {
 
   public static native void doSendJson(String formName, String formJson, String packageName) /*-{
     $wnd.Blocklies[formName].ReplMgr.sendFormData(formJson, packageName);
+  }-*/;
+
+    public native void hideChaff()/*-{
+    Blockly.hideChaff();
   }-*/;
 
   public native void resize()/*-{

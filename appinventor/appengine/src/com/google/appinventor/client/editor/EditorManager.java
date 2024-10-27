@@ -415,7 +415,7 @@ public final class EditorManager {
                             }
                             javaJsonResponse.setContent(jsonResponse);
                             yailFiles.add(javaJsonResponse);
-                            OdeLog.log("successful generation");
+                            LOG.warning("successful generation");
                         }
                         catch (YailGenerationException e)
                         {
@@ -651,7 +651,7 @@ public final class EditorManager {
         final long projectId = fileDescriptor.getProjectId();
         final String fileId = fileDescriptor.getFileId();
         final String content = fileDescriptor.getContent();
-        Ode.CLog("Saving fileId " + fileId + " for projectId " + projectId);
+        LOG.warning("Saving fileId " + fileId + " for projectId " + projectId);
         Ode.getInstance().getProjectService().save2(Ode.getInstance().getSessionId(),
           projectId, fileId, false, content, new OdeAsyncCallback<Long>(MESSAGES.saveErrorMultipleFiles()) {
             @Override

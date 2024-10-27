@@ -17,12 +17,12 @@ import com.google.appinventor.client.editor.youngandroid.YaProjectEditor;
 
 import com.google.appinventor.client.explorer.commands.*;
 
-import com.google.appinventor.client.output.OdeLog;
+//import com.google.appinventor.client.output.OdeLog;
 
 import com.google.appinventor.client.tracking.Tracking;
 
 import com.google.appinventor.client.utils.Downloader;
-import com.google.appinventor.client.widgets.DropDownButton.DropDownItem;
+import com.google.appinventor.client.widgets.DropDownItem;
 
 import com.google.appinventor.client.editor.youngandroid.actions.SwitchScreenAction;
 import com.google.appinventor.client.widgets.DropDownButton;
@@ -37,7 +37,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
-<<<<<<< HEAD:appinventor/appengine/src/com/google/appinventor/client/DesignToolbar.java
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -47,7 +46,6 @@ import com.google.gwt.user.client.ui.*;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Label;
->>>>>>> mitapp/master:appinventor/appengine/src/com/google/appinventor/client/editor/youngandroid/DesignToolbar.java
 
 import java.util.LinkedList;
 import java.util.List;
@@ -132,6 +130,8 @@ public class DesignToolbar extends Toolbar {
   private static final String WIDGET_NAME_SWITCH_TO_FORM_EDITOR = "SwitchToFormEditor";
   private static final String WIDGET_NAME_SENDTOGALLERY = "SendToGallery";
   private static final String WIDGET_NAME_PROJECT_PROPERTIES_DIALOG = "ProjectPropertiesDialog";
+  private static final String WIDGET_NAME_GENERATE_JAVA_FILE = "Generate Java";
+  private static final String WIDGET_NAME_GENERATE_JAVA_PROJECT = "Generate Java Project";
 
   // Enum for type of view showing in the design tab
   public enum View {
@@ -183,7 +183,9 @@ public class DesignToolbar extends Toolbar {
     // Is the Gallery Enabled (new gallery)?
     setVisibleItem(sendToGalleryItem, Ode.getSystemConfig().getGalleryEnabled()
         && !Ode.getInstance().getGalleryReadOnly());
-
+    // Add button for Java code Generation, this is old style from JavaBridge
+    // Use Toolbar function to add new item
+    add(new ToolbarItem("Java Bridge", "Generate Java", new ShowJBridgeWindowAction()));
     // Gray out the Designer button and enable the blocks button
     toggleEditor(false);
     Ode.getInstance().getTopToolbar().updateFileMenuButtons(0);

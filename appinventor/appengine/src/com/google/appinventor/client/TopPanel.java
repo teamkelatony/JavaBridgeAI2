@@ -150,13 +150,13 @@ public class TopPanel extends Composite {
 
 
 
+
+
     if (Ode.getInstance().isReadOnly()) {
       accountButton.setItemVisible(WIDGET_NAME_DELETE_ACCOUNT, false);
     } else {
       readOnly.removeFromParent();
     }
-o
-
 
 
 

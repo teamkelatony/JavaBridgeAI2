@@ -175,6 +175,14 @@ var methodParamsMap = {
   //notifer
   'AfterChoosing': {0: JAVA_STRING},
   'AfterTextInput': {0: JAVA_STRING},
+  'DismissProgressDialog': {},
+  'LogInfo': {0: JAVA_STRING},
+  'LogWarning': {0: JAVA_STRING},
+  'ShowAlert': {0: JAVA_STRING},
+  'ShowMessageDialog': {0: JAVA_STRING, 1: JAVA_STRING, 2: JAVA_STRING},
+  'ShowPasswordDialog': {0: JAVA_STRING, 1: JAVA_STRING, 2: JAVA_STRING},
+  'ShowTextDialog': {0: JAVA_STRING, 1: JAVA_STRING, 2: JAVA_BOOLEAN},
+  'ShowChooseDialog': {0: JAVA_STRING, 1: JAVA_STRING, 2: JAVA_STRING, 3: JAVA_STRING, 4:JAVA_BOOLEAN},
 
   //orientation sensor
   'OrientationChanged': {0: JAVA_FLOAT, 1: JAVA_FLOAT, 2: JAVA_FLOAT},
@@ -187,6 +195,18 @@ var methodParamsMap = {
   'LatitudeFromAddress': {0: JAVA_STRING},
   'LocationChanged': {0: JAVA_FLOAT, 1: JAVA_FLOAT, 2: JAVA_FLOAT},
   'StatusChanged': {0: JAVA_STRING, 1: JAVA_STRING},
+
+  //map
+  'CreateMarker': {0: JAVA_FLOAT, 1: JAVA_FLOAT},
+  'DoubleTapAtPoint': {0: JAVA_FLOAT, 1: JAVA_FLOAT},
+  'PanTo': {0: JAVA_FLOAT, 1: JAVA_FLOAT, 2: JAVA_FLOAT},
+  'LoadFromURL': {0: JAVA_STRING},
+	
+   // Circle
+  'SetLocation': {0: JAVA_FLOAT, 1: JAVA_FLOAT},
+  'DistanceToPoint': {0: JAVA_FLOAT, 1: JAVA_FLOAT, 2: JAVA_FLOAT},
+  'ShowInfobox': {},
+  'HideInfobox': {},
 
   //barcode scanner
   "AfterScan": {0: JAVA_STRING},
@@ -240,6 +260,25 @@ var methodParamsMap = {
   'UriEncode': {0: JAVA_STRING},
   'XMLTextDecode': {0: JAVA_STRING},
   'GotText': {0: JAVA_STRING, 1: JAVA_INT, 2: JAVA_STRING, 3: JAVA_STRING},
+// For methods without arguments, we need to set to empty arguments or else program will skip it
+  'Get': {},
+  'ClearCookies': {},
+  'Delete': {},
+
+  //webviewer
+  'GoToUrl': {0: JAVA_STRING},
+  'BeforePageLoad': {0: JAVA_STRING},
+  'PageLoaded': {0: JAVA_STRING},
+  'WebViewStringChange': {0: JAVA_INT},
+  'ErrorOccurred': {0: JAVA_INT, 1: JAVA_STRING, 2: JAVA_STRING},
+  'GoBack': {},
+  'GoForward': {},
+  'GoHome': {},
+  'CanGoBack': {},
+  'CanGoForward': {},
+  'ClearCaches': {},
+  'ReLoad': {},
+
 
   //sharing
   'ShareFile': {0: JAVA_STRING},
@@ -256,7 +295,7 @@ var methodParamsMap = {
   'TweetWithImage': {0: JAVA_STRING},
 
   //tinyWebDB
-  'GetValue': {0: JAVA_STRING, 1: JAVA_STRING},
+  'GetValue': {0: JAVA_STRING},
   'StoreValue': {0: JAVA_STRING, 1: JAVA_OBJECT},
 
   //firebase
@@ -264,6 +303,11 @@ var methodParamsMap = {
 
   //tinyDB
   'ClearTag': {0: JAVA_STRING},
+
+  // OCR Space
+  // Add 10/19 AS/MS
+  'GetOCRResponse': {0: JAVA_STRING, 1: JAVA_STRING, 2: JAVA_STRING},
+  'OCRFromFile': {0: JAVA_STRING, 1: JAVA_STRING, 2: JAVA_STRING, 3: JAVA_STRING, 4: JAVA_BOOLEAN, 5: JAVA_INT},
 
   //texting
   'MessageReceived': {0: JAVA_STRING, 1: JAVA_STRING},
@@ -969,7 +1013,7 @@ Blockly.Java.createMethodParameterString = function (body) {
       var castValue = methodParamsMap[methodParam][index];
       parameters.push(castValue + " " + paramName);
     } else {
-        throw "\"Cannot find method param entry for \" + methodParam + \".\" + paramName";
+        throw "\"Can't find method param entry for \" + methodParam + \".\" + paramName" + castValue + methodParam;
     }
   }
   var stringParam = "";
@@ -1038,7 +1082,7 @@ Blockly.Java.normalCast = function (body, methodParam, eventMethodParamListings,
     index = eventMethodParamListings[paramName];
     if (methodParamsMap[methodParam] != undefined) {
       var objectCastType = Blockly.Java.findObjectCastType(methodParamsMap[methodParam][index]);
-      parameters.push("(" + objectCastType + ")" + "params[" + eventMethodParamListings[paramName] + "]");
+      parameters.push("(" + objectCastType + ")" + "params[" + eventMethodParamListings[paramName] + methodParam + "]");
     }
   }
 

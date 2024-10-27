@@ -41,7 +41,7 @@
                             Learn More about the Java Bridge Project
                          </a>
                       </p>
-    <img style="width:310px;margin-bottom: 50px;" class="img-scale" src="/images/JBridgeIcon.png">
+    <img style="width:310px;margin-bottom: 50px;" class="img-scale" src="/static/images/JBridgeIcon.png">
   </center>
 <% if (error != null) {
 out.println("<center><font color=red><b>" + error + "</b></font></center><br/>");

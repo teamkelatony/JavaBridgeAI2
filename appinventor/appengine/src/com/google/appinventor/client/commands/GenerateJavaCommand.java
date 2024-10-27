@@ -17,7 +17,7 @@ public class GenerateJavaCommand implements Command {
       final long projectId = Ode.getInstance().getCurrentYoungAndroidProjectId();
       final String projectName = Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName();
       final String javaFileName = Ode.getInstance().getCurrentFileEditor().getFileNode().getName().replace(".scm", "").replace(".bky", "") + ".java";
-      final String userName = Ode.getInstance().getUser().getUserName();
+      final String userName = Ode.getInstance().getUser().getUserId();
 
       //generate and download java file
       ChainableCommand cmd = new SaveAllEditorsCommand(new com.google.appinventor.client.explorer.commands.GenerateJavaCommand(null));

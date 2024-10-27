@@ -415,7 +415,63 @@ public class ObjectifyStorageIo implements StorageIo {
 
   @Override
   public void setUserSessionId(final String userId, final String sessionId) {
+    try {
+      runJobWithRetries(new JobRetryHelper() {
+        @Override
+        public void run(Objectify datastore) {
+          String cachekey = User.usercachekey + "|" + userId;
+          memcache.delete(cachekey);  // Flush cached copy prior to update
+          UserData userData = datastore.find(userKey(userId));
+          if (userData != null) {
+            userData.sessionid = sessionId;
+            datastore.put(userData);
+          }
+        }
+      }, false);
+    } catch (ObjectifyException e) {
+      throw CrashReport.createAndLogError(LOG, null, collectUserErrorInfo(userId), e);
+    }
+  }
+    @Override
+  public void setUserPassword(final String userId, final String password) {
+    try {
+      runJobWithRetries(new JobRetryHelper() {
+        @Override
+        public void run(Objectify datastore) {
+          String cachekey = User.usercachekey + "|" + userId;
+          memcache.delete(cachekey);  // Flush cached copy prior to update
+          UserData userData = datastore.find(userKey(userId));
+          if (userData != null) {
+            userData.password = password;
+            datastore.put(userData);
+          }
+        }
+      }, true);
+    } catch (ObjectifyException e) {
+      throw CrashReport.createAndLogError(LOG, null, collectUserErrorInfo(userId), e);
+    }
+  }
 
+  @Override
+  public String loadSettings(final String userId) {
+    final Result<String> settings = new Result<String>();
+    try {
+      runJobWithRetries(new JobRetryHelper() {
+        @Override
+        public void run(Objectify datastore) {
+          UserData userData = datastore.find(UserData.class, userId);
+          if (userData != null) {
+            settings.t = userData.settings;
+          } else {
+            settings.t = "";
+          }
+        }
+      }, false);
+    } catch (ObjectifyException e) {
+      throw CrashReport.createAndLogError(LOG, null, collectUserErrorInfo(userId), e);
+    }
+    return settings.t;
+  }
   @Override
   public void storeSettings(final String userId, final String settings) {
     try {

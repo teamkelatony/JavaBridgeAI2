@@ -574,13 +574,13 @@ public final class YaBlocksEditor extends FileEditor
     String javaFileName = fileName.replace(YoungAndroidSourceAnalyzer.BLOCKLY_SOURCE_EXTENSION,
             YoungAndroidSourceAnalyzer.JAVA_FILE_EXTENSION);
     String projectName = Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName();
-    String userName = Ode.getInstance().getUser().getUserName();
+    String userName = Ode.getInstance().getUser().getUserId();
     return ServerLayout.generatedJavaPath(userName, projectName) + "/" + javaFileName;
     }
 
   private String manifestFileName(){
     String projectName = Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName();
-    String userName = Ode.getInstance().getUser().getUserName();
+    String userName = Ode.getInstance().getUser().getUserId();
     return ServerLayout.generatedJavaPath(userName, projectName) + "/AndroidManifest.xml";
     }
 

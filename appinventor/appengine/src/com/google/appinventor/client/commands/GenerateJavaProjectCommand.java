@@ -17,7 +17,7 @@ public class GenerateJavaProjectCommand implements Command {
     final long projectId = Ode.getInstance().getCurrentYoungAndroidProjectId();
     final ProjectRootNode projectRootNode = Ode.getInstance().getCurrentYoungAndroidProjectRootNode();
     final String projectName = Ode.getInstance().getCurrentYoungAndroidProjectRootNode().getName();
-    final String userName = Ode.getInstance().getUser().getUserName();
+    final String userName = Ode.getInstance().getUser().getUserId();
     //generate and download project
     ChainableCommand cmd = new SaveAllEditorsCommand(new GenerateJavaCommand(null));
     cmd.startExecuteChain(Tracking.PROJECT_ACTION_BUILD_YAIL_YA, projectRootNode,

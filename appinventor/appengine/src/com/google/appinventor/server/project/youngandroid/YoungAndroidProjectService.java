@@ -47,17 +47,6 @@ import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidCompon
 import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidFormNode;
 import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidManifestNode;
 import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidPackageNode;
-    if (!AppInventorFeatures.hasYailGenerationOption()
-        || !Ode.getInstance().getUser().getIsAdmin()) {
-      buildDropDown.removeItemById(WIDGET_NAME_BUILD_YAIL);
-    }
-    buildDropDown.removeUnneededSeparators();
-
-    if (!Ode.getUserAutoloadProject()) {
-      settingsDropDown.setItemHtmlById("AutoloadLastProject", MESSAGES.enableAutoload());
-      settingsDropDown.setCommandById("AutoloadLastProject", new EnableAutoloadAction());
-    }
-    if (!Ode.getUserDyslexicFont()) {
 import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidProjectNode;
 import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidSourceFolderNode;
 import com.google.appinventor.shared.rpc.project.youngandroid.YoungAndroidSourceNode;
@@ -308,8 +297,8 @@ public final class YoungAndroidProjectService extends CommonProjectService {
     String oldName = storageIo.getProjectName(userId, oldProjectId);
     String oldProjectSettings = storageIo.loadProjectSettings(userId, oldProjectId);
     String oldProjectHistory = storageIo.getProjectHistory(userId, oldProjectId);
-    }
-
+    YoungAndroidSettingsBuilder builder = new YoungAndroidSettingsBuilder(
+        new Settings(JSON_PARSER, oldProjectSettings));
     Project newProject = new Project(newName);
     newProject.setProjectType(YoungAndroidProjectNode.YOUNG_ANDROID_PROJECT_TYPE);
     newProject.setProjectHistory(oldProjectHistory);

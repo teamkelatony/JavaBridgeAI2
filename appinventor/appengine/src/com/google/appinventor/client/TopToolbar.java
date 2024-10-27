@@ -26,6 +26,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import java.util.logging.Logger;
+import com.google.gwt.user.client.Command;
 
 /**
  * TopToolbar lives in the TopPanel, to create functionality in the designer.
@@ -78,6 +79,15 @@ public class TopToolbar extends Composite {
   private static final boolean iamChromebook = isChromeBook();
 
   private static final Logger LOG = Logger.getLogger(TopToolbar.class.getName());
+
+
+  @UiField DropDownButton fileDropDown;
+  @UiField DropDownButton connectDropDown;
+  @UiField DropDownButton buildDropDown;
+  @UiField DropDownButton settingsDropDown;
+  @UiField DropDownButton adminDropDown;
+  @UiField (provided = true) final Boolean hasWriteAccess;
+ 
 
 
   /**
@@ -395,12 +405,22 @@ public class TopToolbar extends Composite {
     return settingsDropDown;
   }
 
-  private static native boolean isChromeBook() /*-{
+ // private static native boolean isChromeBook() {
+ // Native method is not working. hardcode this to false since it is giving unknown compilatione errors
+ // should revisit when time permits
+ //private static native boolean isChromeBook();
+ /*
+ private static boolean isChromeBook() {
+     return false;
+  }
+  */ 
+ private static native boolean isChromeBook() /*-{
     if (/\bCrOS\b/.test(navigator.userAgent)) {
       return true;
     } else {
       return false;
     }
+  }-*/;
 
   private class ShowJBridgeWindowAction implements Command {
     @Override
